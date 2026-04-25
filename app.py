@@ -465,17 +465,65 @@ with tab_extract:
                     record_extraction(active_profile_id)
                 progress.progress(1.0)
                 status.text("Extraction complete!")
+
+                summary = result.get("summary", {})
+                total_rows = sum(v for v in summary.values() if isinstance(v, int))
                 st.success(
-                    f"Extraction finished. Output: {result['output_dir']}"
+                    f"Extraction finished — {total_rows:,} total rows. "
+                    f"Output: {result['output_dir']}"
                 )
+
+                # Auto-download buttons for master files
+                dl_col1, dl_col2, dl_col3 = st.columns(3)
+                master_excel = os.path.join(result["output_dir"], "MASTER_ALL_DATA.xlsx")
+                master_json = os.path.join(result["output_dir"], "MASTER_ALL_DATA.json")
+                if os.path.exists(master_excel):
+                    with open(master_excel, "rb") as f:
+                        dl_col1.download_button(
+                            "Download Excel", f.read(),
+                            file_name="MASTER_ALL_DATA.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        )
+                if os.path.exists(master_json):
+                    with open(master_json, "r", encoding="utf-8") as f:
+                        dl_col2.download_button(
+                            "Download JSON", f.read(),
+                            file_name="MASTER_ALL_DATA.json",
+                            mime="application/json",
+                        )
 
                 if create_zip:
                     zip_path = ext.zip_output(result["output_dir"])
-                    st.info(f"ZIP created: {zip_path}")
+                    if os.path.exists(zip_path):
+                        with open(zip_path, "rb") as f:
+                            dl_col3.download_button(
+                                "Download ZIP", f.read(),
+                                file_name=os.path.basename(zip_path),
+                                mime="application/zip",
+                            )
 
+            except ValueError as e:
+                st.session_state.extraction_running = False
+                st.error(f"Token error: {e}\n\nPlease generate a new token at "
+                         "https://developers.facebook.com/tools/explorer/")
+            except PermissionError as e:
+                st.session_state.extraction_running = False
+                st.error(f"Permission error: {e}\n\nEnsure your token has "
+                         "ads_read and read_insights permissions.")
             except Exception as e:
                 st.session_state.extraction_running = False
-                st.error(f"Extraction failed: {e}")
+                err_msg = str(e)
+                if "reduce" in err_msg.lower() or "too large" in err_msg.lower():
+                    st.error(
+                        f"Request too large: {err_msg}\n\n"
+                        "The system tried chunked fetching and async reports but "
+                        "all strategies failed. Try:\n"
+                        "1. Use a shorter date range\n"
+                        "2. Select fewer breakdowns\n"
+                        "3. Use 'Custom Selection' for metrics instead of 'All'"
+                    )
+                else:
+                    st.error(f"Extraction failed: {e}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 2: DATA PREVIEW
@@ -488,19 +536,45 @@ with tab_preview:
     if result and "output_dir" in result:
         raw_dir = os.path.join(result["output_dir"], "raw")
         if os.path.exists(raw_dir):
-            csv_files = [f for f in os.listdir(raw_dir) if f.endswith(".csv")]
+            csv_files = sorted([f for f in os.listdir(raw_dir) if f.endswith(".csv")])
             if csv_files:
-                selected_file = st.selectbox("Select Dataset", csv_files)
+                sel_col, dl_col = st.columns([3, 1])
+                with sel_col:
+                    selected_file = st.selectbox("Select Dataset", csv_files)
                 path = os.path.join(raw_dir, selected_file)
                 df = pd.read_csv(path)
+
+                with dl_col:
+                    st.write("")
+                    st.write("")
+                    csv_data = df.to_csv(index=False).encode("utf-8-sig")
+                    st.download_button(
+                        "Download CSV", csv_data,
+                        file_name=selected_file,
+                        mime="text/csv",
+                    )
+
                 st.dataframe(df, use_container_width=True, hide_index=True)
-                st.info(f"{len(df)} rows x {len(df.columns)} columns")
+                st.info(f"{len(df):,} rows x {len(df.columns)} columns")
 
                 search = st.text_input("Search columns...")
                 if search:
                     matching = [c for c in df.columns if search.lower() in c.lower()]
                     if matching:
                         st.dataframe(df[matching], use_container_width=True, hide_index=True)
+                    else:
+                        st.warning("No matching columns found")
+
+                # JSON download for same dataset
+                json_file = selected_file.replace(".csv", ".json")
+                json_path = os.path.join(raw_dir, json_file)
+                if os.path.exists(json_path):
+                    with open(json_path, "r", encoding="utf-8") as jf:
+                        st.download_button(
+                            "Download JSON", jf.read(),
+                            file_name=json_file,
+                            mime="application/json",
+                        )
             else:
                 st.info("No CSV files in output")
         else:

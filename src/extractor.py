@@ -34,6 +34,11 @@ logging.basicConfig(
 log = logging.getLogger("MetaAdsExtractor")
 
 
+class RequestTooLargeError(Exception):
+    """Raised when Meta API says the request data is too large."""
+    pass
+
+
 def slugify(value: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_\-]+", "_", value.strip()).strip("_").lower()
 
@@ -124,6 +129,13 @@ class MetaAdsExtractor:
                 raise ValueError(f"Token invalid: {msg}")
             if code == 200:
                 raise PermissionError(f"Insufficient permissions: {msg}")
+            if code == 1 and ("reduce" in msg.lower() or "too large" in msg.lower() or "too much data" in msg.lower()):
+                raise RequestTooLargeError(msg)
+            if code == 100 and retry < MAX_RETRIES and ("timeout" in msg.lower() or "try again" in msg.lower()):
+                wait = min((2 ** retry) * 5, 300)
+                log.warning(f"Timeout/transient error (code {code}), waiting {wait}s...")
+                time.sleep(wait)
+                return self._api_call(endpoint, params, method=method, retry=retry + 1)
             raise RuntimeError(f"Meta API error {code}: {msg}")
         return payload
 
@@ -259,20 +271,51 @@ class MetaAdsExtractor:
         normalized = DATE_PRESETS.get(preset or "last_30d", preset or "last_30d")
         return {"date_preset": normalized}
 
-    def fetch_insights(
+    def _preset_to_date_range(self, preset: str) -> tuple:
+        """Convert a preset string to explicit (start_date, end_date) strings."""
+        today = datetime.now().date()
+        mapping = {
+            "today": (today, today),
+            "yesterday": (today - timedelta(days=1), today - timedelta(days=1)),
+            "last_3d": (today - timedelta(days=3), today - timedelta(days=1)),
+            "last_7d": (today - timedelta(days=7), today - timedelta(days=1)),
+            "last_14d": (today - timedelta(days=14), today - timedelta(days=1)),
+            "last_28d": (today - timedelta(days=28), today - timedelta(days=1)),
+            "last_30d": (today - timedelta(days=30), today - timedelta(days=1)),
+            "last_60d": (today - timedelta(days=60), today - timedelta(days=1)),
+            "last_90d": (today - timedelta(days=90), today - timedelta(days=1)),
+            "this_month": (today.replace(day=1), today),
+            "this_year": (today.replace(month=1, day=1), today),
+        }
+        if preset in mapping:
+            s, e = mapping[preset]
+            return s.strftime("%Y-%m-%d"), e.strftime("%Y-%m-%d")
+        return (today - timedelta(days=30)).strftime("%Y-%m-%d"), (today - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    def _split_date_range(self, start: str, end: str, chunk_days: int = 7) -> List[tuple]:
+        """Split a date range into smaller chunks for large requests."""
+        start_dt = datetime.strptime(start, "%Y-%m-%d").date()
+        end_dt = datetime.strptime(end, "%Y-%m-%d").date()
+        chunks = []
+        cursor = start_dt
+        while cursor <= end_dt:
+            chunk_end = min(cursor + timedelta(days=chunk_days - 1), end_dt)
+            chunks.append((cursor.strftime("%Y-%m-%d"), chunk_end.strftime("%Y-%m-%d")))
+            cursor = chunk_end + timedelta(days=1)
+        return chunks
+
+    def _build_insights_params(
         self,
         level: str,
         breakdown_key: str,
-        preset: Optional[str] = None,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        time_increment: Any = 1,
-        selected_metrics: Optional[List[str]] = None,
-        attribution_windows: Optional[List[str]] = None,
-        filtering: Optional[List[dict]] = None,
-        action_report_time: str = "mixed",
-        campaign_ids: Optional[List[str]] = None,
-    ) -> pd.DataFrame:
+        time_increment: Any,
+        selected_metrics: Optional[List[str]],
+        attribution_windows: Optional[List[str]],
+        filtering: Optional[List[dict]],
+        action_report_time: str,
+        campaign_ids: Optional[List[str]],
+    ) -> dict:
+        """Build the base params dict for an insights query (without date params)."""
         breakdown_cfg = BREAKDOWN_CONFIGS[breakdown_key]
         metrics = selected_metrics or breakdown_cfg["metrics"]
         params = {
@@ -297,11 +340,119 @@ class MetaAdsExtractor:
             })
         if filter_list:
             params["filtering"] = json.dumps(filter_list)
+        return params
 
+    def _fetch_insights_chunked(
+        self,
+        params: dict,
+        start_date: str,
+        end_date: str,
+        chunk_days: int = 7,
+    ) -> List[dict]:
+        """Fetch insights in date chunks when a single request is too large."""
+        chunks = self._split_date_range(start_date, end_date, chunk_days)
+        all_rows = []
+        log.info(f"Splitting {start_date}..{end_date} into {len(chunks)} chunks of {chunk_days} days")
+        for i, (cs, ce) in enumerate(chunks):
+            chunk_params = params.copy()
+            chunk_params["time_range"] = json.dumps({"since": cs, "until": ce})
+            chunk_params.pop("date_preset", None)
+            try:
+                rows = self._fetch_all_pages(f"{self.ad_account_id}/insights", chunk_params)
+                all_rows.extend(rows)
+                log.info(f"Chunk {i+1}/{len(chunks)} ({cs} to {ce}): {len(rows)} rows")
+            except RequestTooLargeError:
+                if chunk_days > 1:
+                    log.warning(f"Chunk still too large, splitting further with {max(1, chunk_days // 2)} day chunks")
+                    sub_rows = self._fetch_insights_chunked(params, cs, ce, max(1, chunk_days // 2))
+                    all_rows.extend(sub_rows)
+                else:
+                    log.error(f"Cannot split further — single day {cs} still too large, skipping")
+            except Exception as e:
+                log.warning(f"Chunk {cs}..{ce} failed: {e}, continuing with remaining chunks")
+        return all_rows
+
+    def _fetch_async_report(self, params: dict) -> List[dict]:
+        """Use Meta's async report endpoint for very large queries."""
+        post_params = params.copy()
+        try:
+            report = self._api_call(
+                f"{self.ad_account_id}/insights",
+                post_params,
+                method="POST",
+            )
+            report_id = report.get("report_run_id")
+            if not report_id:
+                raise RuntimeError("No report_run_id in async response")
+
+            log.info(f"Async report started: {report_id}")
+            for attempt in range(120):
+                time.sleep(5)
+                status = self._api_call(report_id, {"access_token": self.access_token})
+                pct = status.get("async_percent_completion", 0)
+                if status.get("async_status") == "Job Completed":
+                    log.info(f"Async report {report_id} complete")
+                    return self._fetch_all_pages(
+                        f"{report_id}/insights",
+                        {"access_token": self.access_token, "limit": PAGE_LIMIT},
+                    )
+                if status.get("async_status") == "Job Failed":
+                    raise RuntimeError(f"Async report failed: {status}")
+                if attempt % 12 == 0:
+                    log.info(f"Async report {pct}% complete...")
+            raise RuntimeError("Async report timed out after 10 minutes")
+        except Exception as e:
+            log.error(f"Async report failed: {e}")
+            raise
+
+    def fetch_insights(
+        self,
+        level: str,
+        breakdown_key: str,
+        preset: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        time_increment: Any = 1,
+        selected_metrics: Optional[List[str]] = None,
+        attribution_windows: Optional[List[str]] = None,
+        filtering: Optional[List[dict]] = None,
+        action_report_time: str = "mixed",
+        campaign_ids: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
+        params = self._build_insights_params(
+            level, breakdown_key, time_increment, selected_metrics,
+            attribution_windows, filtering, action_report_time, campaign_ids,
+        )
         params.update(self.resolve_date_params(preset, start_date, end_date))
 
+        # Resolve date range for fallback chunking
+        if start_date and end_date:
+            resolved_start, resolved_end = start_date, end_date
+        elif preset:
+            resolved_start, resolved_end = self._preset_to_date_range(
+                DATE_PRESETS.get(preset, preset)
+            )
+        else:
+            resolved_start, resolved_end = self._preset_to_date_range("last_30d")
+
+        breakdown_cfg = BREAKDOWN_CONFIGS[breakdown_key]
+        rows = []
         try:
             rows = self._fetch_all_pages(f"{self.ad_account_id}/insights", params)
+        except RequestTooLargeError:
+            log.warning(f"Request too large for {level} x {breakdown_key}, trying chunked fetch...")
+            try:
+                rows = self._fetch_insights_chunked(params, resolved_start, resolved_end, chunk_days=7)
+            except Exception:
+                log.warning(f"Chunked fetch failed, trying async report...")
+                try:
+                    async_params = params.copy()
+                    async_params["time_range"] = json.dumps({"since": resolved_start, "until": resolved_end})
+                    async_params.pop("date_preset", None)
+                    rows = self._fetch_async_report(async_params)
+                except Exception as e:
+                    log.error(f"All strategies failed for {level} x {breakdown_key}: {e}")
+                    return pd.DataFrame()
         except Exception as e:
             log.error(f"Failed {level} x {breakdown_key}: {e}")
             return pd.DataFrame()
