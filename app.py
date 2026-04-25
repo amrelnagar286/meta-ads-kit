@@ -344,8 +344,8 @@ with st.sidebar:
 # MAIN AREA — TABS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-tab_extract, tab_preview, tab_kpi, tab_files, tab_settings = st.tabs([
-    "Extraction", "Data Preview", "KPI Dashboard", "Files & Export", "Settings",
+tab_extract, tab_preview, tab_kpi, tab_files, tab_powerbi, tab_settings = st.tabs([
+    "Extraction", "Data Preview", "KPI Dashboard", "Files & Export", "Power BI", "Settings",
 ])
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -604,7 +604,83 @@ with tab_files:
         st.info("Run an extraction to see files")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 5: SETTINGS
+# TAB 5: POWER BI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+with tab_powerbi:
+    st.markdown('<div class="section-header">Power BI Dashboard</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    Generate a complete Power BI template package with star schema data model,
+    35+ DAX measures, Power Query M code, and 7 report page definitions.
+    """)
+
+    col_pb1, col_pb2 = st.columns(2)
+    with col_pb1:
+        pbi_output = st.text_input(
+            "Output Directory", value="output/powerbi_template",
+            key="pbi_output",
+        )
+    with col_pb2:
+        pbi_data_folder = st.text_input(
+            "Data Folder Path (for M code)",
+            value="C:\\Users\\YourUser\\meta-ads-data",
+            key="pbi_data_folder",
+        )
+
+    if st.button("Generate Power BI Template", type="primary", use_container_width=True):
+        try:
+            from src.powerbi_template import generate_powerbi_template, DAX_MEASURES, REPORT_PAGES, DATA_MODEL
+
+            files = generate_powerbi_template(pbi_output, pbi_data_folder)
+            st.success(f"Power BI template generated! {len(files)} files created.")
+
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Tables", len(DATA_MODEL["tables"]))
+            c2.metric("DAX Measures", len(DAX_MEASURES))
+            c3.metric("Report Pages", len(REPORT_PAGES))
+            c4.metric("Files Generated", len(files))
+
+            st.markdown("### Generated Files")
+            for name, path in files.items():
+                st.write(f"• **{name}**: `{path}`")
+
+            st.markdown("### Quick Start")
+            st.info(
+                "1. Open Power BI Desktop\n"
+                "2. Load data from your extraction folder\n"
+                "3. Import DAX measures from `dax_measures.dax`\n"
+                "4. Apply theme from `theme.json`\n"
+                "5. Build reports using `report_pages.json` layout\n\n"
+                "See `SETUP_GUIDE.md` in the output for detailed instructions."
+            )
+        except Exception as e:
+            st.error(f"Generation failed: {e}")
+
+    st.markdown("---")
+    st.markdown("### DAX Measures Preview")
+    with st.expander("View all 35+ DAX measures"):
+        try:
+            from src.powerbi_template import DAX_MEASURES
+            for name, formula in DAX_MEASURES.items():
+                st.code(f"// {name}\n{name} = {formula.strip()}", language="sql")
+        except ImportError:
+            st.info("Power BI template module not loaded.")
+
+    st.markdown("### Report Pages")
+    with st.expander("View 7 report page layouts"):
+        try:
+            from src.powerbi_template import REPORT_PAGES
+            for page in REPORT_PAGES:
+                st.markdown(f"**{page['name']}** — {page['description']}")
+                st.write(f"Visuals: {len(page['visuals'])}")
+                st.write(f"Slicers: {', '.join(page.get('slicers', []))}")
+                st.write("---")
+        except ImportError:
+            st.info("Power BI template module not loaded.")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 6: SETTINGS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with tab_settings:
