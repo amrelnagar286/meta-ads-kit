@@ -45,19 +45,19 @@ with tab_api:
     col_a1, col_a2 = st.columns(2)
     with col_a1:
         st.markdown("### Connection Settings")
-        st.text_input("API Version", value=cfg.api_version, disabled=True, key="set_api_ver")
-        st.text_input("Base URL", value=f"https://graph.facebook.com/{cfg.api_version}", disabled=True, key="set_base_url")
+        st.text_input("API Version", value=cfg.META_API_VERSION, disabled=True, key="set_api_ver")
+        st.text_input("Base URL", value=f"https://graph.facebook.com/{cfg.META_API_VERSION}", disabled=True, key="set_base_url")
         st.number_input("Page Limit", value=PAGE_LIMIT, disabled=True, key="set_page_limit")
         st.number_input("Max Workers", value=MAX_WORKERS, disabled=True, key="set_max_workers")
         st.number_input("Max Retries", value=MAX_RETRIES, disabled=True, key="set_max_retries")
 
     with col_a2:
         st.markdown("### Rate Limiting")
-        st.number_input("Calls per Hour", value=cfg.rate_limit_calls_per_hour, disabled=True, key="set_calls_hr")
-        st.number_input("Retry Max", value=cfg.rate_limit_retry_max, disabled=True, key="set_retry_max")
-        st.number_input("Backoff Base", value=cfg.rate_limit_backoff_base, disabled=True, key="set_backoff")
-        st.number_input("Cache TTL (seconds)", value=cfg.cache_ttl, disabled=True, key="set_cache_ttl")
-        st.number_input("Insights Cache TTL", value=cfg.insights_cache_ttl, disabled=True, key="set_insights_ttl")
+        st.number_input("Calls per Hour", value=cfg.RATE_LIMIT_CALLS_PER_HOUR, disabled=True, key="set_calls_hr")
+        st.number_input("Retry Max", value=cfg.RATE_LIMIT_RETRY_MAX, disabled=True, key="set_retry_max")
+        st.number_input("Backoff Base", value=cfg.RATE_LIMIT_BACKOFF_BASE, disabled=True, key="set_backoff")
+        st.number_input("Cache TTL (seconds)", value=cfg.CACHE_TTL_SECONDS, disabled=True, key="set_cache_ttl")
+        st.number_input("Insights Cache TTL", value=cfg.INSIGHTS_CACHE_TTL, disabled=True, key="set_insights_ttl")
 
     st.markdown("### Connection Status")
     connected = st.session_state.get("connected", False)

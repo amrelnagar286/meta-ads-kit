@@ -2,9 +2,11 @@
 KPI Engine — Compute standard and custom metrics on DataFrames.
 Supports safe division, custom formula evaluation, and aggregation.
 """
-import re
+import ast
 import math
 import logging
+import operator
+import re
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -95,7 +97,7 @@ STANDARD_KPIS = {
 # FORMULA PARSER — SAFE EVALUATION WITH COLUMN REFERENCES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-SAFE_MATH = {
+SAFE_FUNCS = {
     "abs": abs,
     "min": min,
     "max": max,
@@ -106,20 +108,59 @@ SAFE_MATH = {
     "pow": pow,
 }
 
+_OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+    ast.Mod: operator.mod,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
+}
+
+
+def _safe_eval_node(node: ast.AST, context: Dict[str, float]) -> float:
+    """Recursively evaluate an AST node using only approved operations."""
+    if isinstance(node, ast.Expression):
+        return _safe_eval_node(node.body, context)
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+        return float(node.value)
+    if isinstance(node, ast.Name):
+        if node.id in context:
+            return float(context[node.id])
+        raise ValueError(f"Unknown variable: {node.id}")
+    if isinstance(node, ast.BinOp):
+        op_fn = _OPERATORS.get(type(node.op))
+        if op_fn is None:
+            raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
+        left = _safe_eval_node(node.left, context)
+        right = _safe_eval_node(node.right, context)
+        return float(op_fn(left, right))
+    if isinstance(node, ast.UnaryOp):
+        op_fn = _OPERATORS.get(type(node.op))
+        if op_fn is None:
+            raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
+        return float(op_fn(_safe_eval_node(node.operand, context)))
+    if isinstance(node, ast.Call):
+        if not isinstance(node.func, ast.Name) or node.func.id not in SAFE_FUNCS:
+            raise ValueError(f"Unsupported function call: {ast.dump(node.func)}")
+        fn = SAFE_FUNCS[node.func.id]
+        args = [_safe_eval_node(a, context) for a in node.args]
+        return float(fn(*args))
+    raise ValueError(f"Unsupported expression: {type(node).__name__}")
+
 
 def evaluate_formula(formula: str, context: Dict[str, float]) -> float:
     """
-    Safely evaluate a formula string using only the supplied variable context.
-    No access to builtins or dangerous functions.
+    Safely evaluate an arithmetic formula string using AST parsing.
+    Only allows numeric literals, named variables from context, basic arithmetic,
+    and approved math functions (abs, min, max, round, sqrt, log, log10, pow).
     """
     try:
-        allowed = dict(SAFE_MATH)
-        allowed.update(context)
-        allowed["__builtins__"] = {}
-        result = eval(formula, allowed)
-        if isinstance(result, (int, float)):
-            return float(result)
-        return 0.0
+        tree = ast.parse(formula, mode="eval")
+        return _safe_eval_node(tree, context)
     except Exception:
         return 0.0
 

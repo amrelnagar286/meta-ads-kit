@@ -374,11 +374,6 @@ class MetaAPIManager:
             "q": query,
         }).get("data", [])
 
-    def get_targeting_browse(self, target_class: str = "interests") -> List[dict]:
-        return self._call(f"{self.ad_account_id}/targetingbrowse", {
-            "access_token": self.access_token,
-        }).get("data", [])
-
     def estimate_reach(self, targeting: dict, optimization_goal: str = "LINK_CLICKS") -> dict:
         return self._call(f"{self.ad_account_id}/reachestimate", {
             "access_token": self.access_token,
@@ -480,7 +475,7 @@ class MetaAPIManager:
     # ═══════════════════════════════════════════════════════════════════════════
 
     def get_targeting_browse(self) -> List[dict]:
-        return self._paginate("act_" + self.ad_account_id.replace("act_", "") + "/targetingbrowse", {
+        return self._paginate(f"{self.ad_account_id}/targetingbrowse", {
             "access_token": self.access_token,
             "limit": 500,
         })

@@ -64,13 +64,16 @@ def z_test_proportions(p1, n1, p2, n2):
     return z, p_value
 
 
+Z_LOOKUP = {0.10: 1.282, 0.05: 1.960, 0.01: 2.576}
+POWER_LOOKUP = {0.80: 0.842, 0.90: 1.282}
+
+
 def calculate_sample_size(baseline_rate, mde, alpha=0.05, power=0.80):
     """Calculate required sample size per variant."""
     if baseline_rate <= 0 or mde <= 0:
         return 0
-    # Simplified sample size formula
-    z_alpha = 1.96  # 95% confidence
-    z_beta = 0.84   # 80% power
+    z_alpha = Z_LOOKUP.get(alpha, 1.960)
+    z_beta = POWER_LOOKUP.get(power, 0.842)
     p1 = baseline_rate
     p2 = baseline_rate * (1 + mde)
     n = ((z_alpha + z_beta) ** 2 * (p1 * (1 - p1) + p2 * (1 - p2))) / ((p1 - p2) ** 2)
@@ -339,7 +342,11 @@ with tab_calc:
         calc_power = st.selectbox("Statistical Power", ["80%", "90%"], index=0, key="calc_power")
 
     if st.button("Calculate", type="primary", key="calc_go"):
-        n = calculate_sample_size(baseline_rate / 100, mde / 100)
+        alpha_map = {"90%": 0.10, "95%": 0.05, "99%": 0.01}
+        power_map = {"80%": 0.80, "90%": 0.90}
+        alpha_val = alpha_map.get(calc_confidence, 0.05)
+        power_val = power_map.get(calc_power, 0.80)
+        n = calculate_sample_size(baseline_rate / 100, mde / 100, alpha=alpha_val, power=power_val)
         total = n * 2
         st.metric("Required Sample Size (per variant)", f"{n:,}")
         st.metric("Total Sample Size (both variants)", f"{total:,}")
