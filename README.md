@@ -284,3 +284,111 @@ Built by [Matt Berman](https://twitter.com/themattberman).
 Stop babysitting Ads Manager. Let your AI copilot do the watching.
 
 Star the repo if this helps. It tells me to keep building.
+
+---
+
+## Ultimate Meta Ads Dashboard
+
+A complete **Meta Ads Manager replacement** built with Streamlit — full CRUD operations, advanced analytics, automation, and Power BI integration.
+
+### Quick Start (Dashboard)
+
+```bash
+# Clone and setup
+git clone https://github.com/amrelnagar286/meta-ads-kit.git
+cd meta-ads-kit
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+
+# Configure credentials
+cp .env.example .env
+# Edit .env with your META_ACCESS_TOKEN and META_AD_ACCOUNT_ID
+
+# Launch
+streamlit run app.py
+```
+
+**Windows:**
+```powershell
+.\scripts\setup.ps1
+.\scripts\start-ultimate.bat
+```
+
+### Dashboard Pages (13 Pages)
+
+| # | Page | Features |
+|---|------|----------|
+| 01 | **Campaign Manager** | Full CRUD, duplicate, insights, compare, bulk operations |
+| 02 | **Ad Sets** | Targeting builder, reach estimation, dayparting scheduler |
+| 03 | **Ads** | Creative library, image/video upload, ad preview (6 formats) |
+| 04 | **Audiences** | Custom audiences, lookalikes, saved audiences, interest browser, overlap |
+| 05 | **Budget Center** | Budget allocation, spend pacing, forecast, automated budget rules |
+| 06 | **Performance** | Live dashboard, trends, alerts (bleeders/fatigue/expensive), health score, anomaly detection |
+| 07 | **Rules Engine** | Create/manage automation rules, 6 templates, execution log, scheduling |
+| 08 | **A/B Testing** | Split test setup, statistical significance (z-test), sample size calculator |
+| 09 | **Funnel & Attribution** | Conversion funnel, attribution model comparison, touchpoints, customer journey, pixel events |
+| 10 | **Report Builder** | Custom reports, saved configs, 6 templates, scheduled reports |
+| 11 | **Activity Log** | Activity feed, recent changes, notification settings, audit trail |
+| 12 | **Data Studio** | Data explorer, pivot tables, chart builder, formula lab, period comparison |
+| 13 | **Settings** | API config, KPI definitions & benchmarks, metric catalog, cache management |
+
+### Main Dashboard Tabs
+
+| Tab | Description |
+|-----|-------------|
+| **Extraction** | Multi-level parallel extraction (account/campaign/adset/ad) with 22+ breakdowns |
+| **Data Preview** | Browse and search extracted datasets |
+| **KPI Dashboard** | 10 standard KPIs with formula lab |
+| **Files & Export** | Excel, JSON, CSV download + Google Sheets export |
+| **Power BI** | Generate complete template (35+ DAX measures, 7 report pages, star schema) |
+| **Settings** | API configuration and metric catalog |
+
+### Power BI Integration
+
+Generate a complete Power BI template package:
+
+- **Star Schema**: FactInsights + 5 dimension tables (DimDate, DimCampaign, DimAdSet, DimAd, DimBreakdown)
+- **35+ DAX Measures**: Core KPIs, time intelligence (PP, YoY, YTD, MTD), running totals, moving averages
+- **7 Report Pages**: Executive Summary, Campaign Deep Dive, Creative Analysis, Audience Insights, Time Analysis, Funnel & ROAS, Placement Performance
+- **Power Query M Code**: Automated data import, date table generation, entity dimension loading
+- **Theme**: Windows 11 styled (Segoe UI, #0078D4 primary) with conditional formatting rules
+
+### API Coverage
+
+Full Meta Graph API v25.0 integration:
+
+- **Campaigns**: Create, read, update, delete, duplicate, status control, bid strategy
+- **Ad Sets**: Targeting (age, gender, geo, interests), optimization goals, dayparting, reach estimation
+- **Ads**: Creative linking, preview (6 formats), status management
+- **Audiences**: Custom, lookalike (multi-country), saved, targeting search (7 categories)
+- **Creatives**: Image/video upload, creative library, object story spec
+- **Pixels**: Pixel stats, custom conversions, event tracking
+- **Batch Operations**: Bulk status updates, budget modifications
+- **Activity Log**: Full account change history
+
+### Architecture
+
+```
+meta-ads-kit/
+├── app.py                    # Main Streamlit dashboard (6 tabs)
+├── pages/                    # 13 Streamlit sub-pages
+│   ├── 01_Campaign_Manager.py
+│   ├── 02_Ad_Sets.py
+│   ├── ...
+│   └── 13_Settings.py
+├── src/
+│   ├── meta_api.py           # MetaAPIManager (40+ methods, full CRUD)
+│   ├── extractor.py          # Parallel extraction engine
+│   ├── kpi_engine.py         # 10 KPIs + custom formulas
+│   ├── meta_catalog.py       # 70+ metrics, breakdowns, constants
+│   ├── powerbi_template.py   # Power BI template generator
+│   ├── helpers.py            # Formatting utilities
+│   ├── config.py             # Configuration management
+│   └── ...
+├── templates/
+│   ├── dashboard.html        # Standalone HTML dashboard (zero dependencies)
+│   └── control-panel.html    # HTML control panel
+├── docs/specs/               # BMAD + SPEKIT specifications
+├── scripts/                  # Windows/Mac/Linux launch scripts
+└── requirements.txt
+```

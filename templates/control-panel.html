@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta Ads Control Panel</title>
+<style>
+:root {
+    --primary: #0078D4; --bg: #f3f3f3; --card: #ffffff;
+    --text: #323130; --muted: #605E5C; --border: #e0e0e0;
+    --success: #107C10; --warning: #FFB900; --danger: #D13438;
+    --font: 'Segoe UI', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); }
+.header { background: linear-gradient(135deg, #005A9E 0%, #003366 100%); color: white; padding: 20px 32px; }
+.header h1 { font-size: 22px; }
+.container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.card h3 { font-size: 16px; margin-bottom: 12px; color: var(--primary); }
+.stat { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.stat:last-child { border-bottom: none; }
+.stat-label { color: var(--muted); }
+.stat-value { font-weight: 600; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+.badge-ok { background: #e6f4ea; color: var(--success); }
+.badge-warn { background: #fff8e1; color: #F57F17; }
+.badge-err { background: #fde8e8; color: var(--danger); }
+.log-box { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 13px; max-height: 300px; overflow-y: auto; }
+.log-line { margin: 2px 0; }
+.log-info { color: #4EC9B0; }
+.log-warn { color: #DCDCAA; }
+.log-err { color: #F48771; }
+.btn { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.btn:hover { background: #005A9E; }
+.footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>Control Panel</h1>
+    <p style="opacity:0.8;font-size:13px;">System Health &amp; Extraction Management</p>
+</div>
+
+<div class="container">
+    <div class="grid">
+        <div class="card">
+            <h3>System Status</h3>
+            <div class="stat"><span class="stat-label">API Connection</span><span class="badge badge-ok">Connected</span></div>
+            <div class="stat"><span class="stat-label">Rate Limiter</span><span class="badge badge-ok">Active</span></div>
+            <div class="stat"><span class="stat-label">Scheduler</span><span class="badge badge-warn">Idle</span></div>
+            <div class="stat"><span class="stat-label">Last Extraction</span><span class="stat-value" id="last-run">N/A</span></div>
+        </div>
+
+        <div class="card">
+            <h3>Rate Limits</h3>
+            <div class="stat"><span class="stat-label">Calls This Hour</span><span class="stat-value" id="calls-hour">0 / 180</span></div>
+            <div class="stat"><span class="stat-label">Account Blocked</span><span class="badge badge-ok">No</span></div>
+            <div class="stat"><span class="stat-label">Backoff Active</span><span class="badge badge-ok">No</span></div>
+            <div class="stat"><span class="stat-label">API Version</span><span class="stat-value">v25.0</span></div>
+        </div>
+
+        <div class="card">
+            <h3>Output Statistics</h3>
+            <div class="stat"><span class="stat-label">Total Runs</span><span class="stat-value" id="total-runs">0</span></div>
+            <div class="stat"><span class="stat-label">Total Files</span><span class="stat-value" id="total-files">0</span></div>
+            <div class="stat"><span class="stat-label">Total Size</span><span class="stat-value" id="total-size">0 MB</span></div>
+            <div class="stat"><span class="stat-label">Last ZIP</span><span class="stat-value">N/A</span></div>
+        </div>
+
+        <div class="card">
+            <h3>Quick Actions</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn" onclick="alert('Open Streamlit dashboard with: streamlit run app.py')">Launch Dashboard</button>
+                <button class="btn" onclick="alert('Open output folder')">Open Output Folder</button>
+                <button class="btn" style="background:var(--danger)" onclick="alert('Clear all cached data?')">Clear Cache</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+        <h3>Extraction Log</h3>
+        <div class="log-box" id="log-box">
+            <div class="log-line log-info">[INFO] System initialized</div>
+            <div class="log-line log-info">[INFO] Configuration loaded from .env</div>
+            <div class="log-line log-info">[INFO] Rate limiter active: 180 calls/hour</div>
+            <div class="log-line log-warn">[WARN] No scheduled jobs configured</div>
+            <div class="log-line log-info">[INFO] Ready for extraction</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Scheduled Jobs</h3>
+        <p style="color: var(--muted); margin-bottom: 12px;">Configure scheduled extractions from the Streamlit dashboard Automation page.</p>
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr><th style="text-align:left;padding:8px;border-bottom:2px solid var(--border);">Job Name</th>
+                <th style="text-align:left;padding:8px;border-bottom:2px solid var(--border);">Interval</th>
+                <th style="text-align:left;padding:8px;border-bottom:2px solid var(--border);">Last Run</th>
+                <th style="text-align:left;padding:8px;border-bottom:2px solid var(--border);">Status</th></tr>
+            </thead>
+            <tbody id="jobs-table">
+                <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted);">No scheduled jobs</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="footer">Control Panel — Meta Ads Ultimate Dashboard v1.0.0</div>
+
+<script>
+document.getElementById('last-run').textContent = new Date().toLocaleString();
+</script>
+</body>
+</html>

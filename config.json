@@ -1,0 +1,25 @@
+{
+    "api_version": "v25.0",
+    "ad_account_id": "",
+    "campaign_filter": [],
+    "level": "ad",
+    "fields": [
+        "account_id", "account_name", "campaign_id", "campaign_name",
+        "adset_id", "adset_name", "ad_id", "ad_name",
+        "objective", "buying_type", "spend", "impressions", "reach",
+        "frequency", "clicks", "ctr", "cpc", "cpm", "cpp",
+        "actions", "action_values", "cost_per_action_type",
+        "conversions", "conversion_values", "purchase_roas",
+        "quality_ranking", "engagement_rate_ranking", "conversion_rate_ranking",
+        "date_start", "date_stop"
+    ],
+    "breakdowns": ["none"],
+    "breakdown_strategy": "separate_files",
+    "date_preset": "last_30d",
+    "time_increment": 1,
+    "action_report_time": "mixed",
+    "attribution_windows": ["7d_click", "1d_view"],
+    "output_dir": "output",
+    "include_entities": true,
+    "create_zip": false
+}

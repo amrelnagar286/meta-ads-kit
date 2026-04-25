@@ -1,7 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Secrets
 .env
-ad-config.json
-workspace/
-memory/
+config/google_credentials.json
+profiles/
+
+# Output data
 output/
-node_modules/
+data/
+logs/
+
+# OS
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp
+*.tmp
+*.bak
