@@ -12,7 +12,7 @@ import pandas as pd
 import json
 import math
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from src.helpers import format_currency, format_percentage, safe_float, safe_divide
 
@@ -209,9 +209,12 @@ with tab_monitor:
                         results = []
                         for var in test.get("variants", []):
                             eid = var.get("entity_id", "")
+                            end_dt = datetime.now()
+                            start_dt = end_dt - timedelta(days=int(test['duration_days']))
                             df = ext.fetch_insights(
                                 level="campaign", breakdown_key="none",
-                                preset=f"last_{test['duration_days']}d",
+                                start_date=start_dt.strftime("%Y-%m-%d"),
+                                end_date=end_dt.strftime("%Y-%m-%d"),
                                 campaign_ids=[eid],
                             )
                             if not df.empty:

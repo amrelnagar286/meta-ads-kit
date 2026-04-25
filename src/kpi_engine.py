@@ -152,16 +152,19 @@ def _safe_eval_node(node: ast.AST, context: Dict[str, float]) -> float:
     raise ValueError(f"Unsupported expression: {type(node).__name__}")
 
 
-def evaluate_formula(formula: str, context: Dict[str, float]) -> float:
+def evaluate_formula(formula: str, context: Dict[str, float], raise_errors: bool = False) -> float:
     """
     Safely evaluate an arithmetic formula string using AST parsing.
     Only allows numeric literals, named variables from context, basic arithmetic,
     and approved math functions (abs, min, max, round, sqrt, log, log10, pow).
+    When raise_errors=True, exceptions propagate to the caller for user-facing error messages.
     """
     try:
         tree = ast.parse(formula, mode="eval")
         return _safe_eval_node(tree, context)
     except Exception:
+        if raise_errors:
+            raise
         return 0.0
 
 

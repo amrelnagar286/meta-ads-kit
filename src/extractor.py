@@ -61,11 +61,8 @@ class MetaAdsExtractor:
         progress_cb: Optional[Callable] = None,
     ):
         self.access_token = access_token.strip()
-        self.ad_account_id = (
-            ad_account_id.strip()
-            if ad_account_id.startswith("act_")
-            else f"act_{ad_account_id.strip()}"
-        )
+        aid = ad_account_id.strip()
+        self.ad_account_id = aid if aid.startswith("act_") else f"act_{aid}"
         self.output_dir = output_dir
         self.progress_cb = progress_cb
         self.session = build_session()

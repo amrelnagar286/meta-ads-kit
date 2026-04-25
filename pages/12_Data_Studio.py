@@ -236,7 +236,7 @@ with tab_formulas:
             import json
             try:
                 context = json.loads(test_vars)
-                result = evaluate_formula(custom_formula, context)
+                result = evaluate_formula(custom_formula, context, raise_errors=True)
                 st.metric("Result", f"{result:,.4f}")
             except Exception as e:
                 st.error(f"Evaluation failed: {e}")
@@ -260,7 +260,7 @@ with tab_formulas:
                 results = []
                 for _, row in fl_df.iterrows():
                     context = {col: safe_float(row.get(col, 0)) for col in fl_df.columns}
-                    results.append(evaluate_formula(custom_formula, context))
+                    results.append(evaluate_formula(custom_formula, context, raise_errors=True))
                 fl_df[new_col_name] = results
                 st.dataframe(fl_df, use_container_width=True, hide_index=True)
 

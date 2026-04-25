@@ -20,10 +20,8 @@ class MetaAPIManager:
 
     def __init__(self, access_token: str, ad_account_id: str):
         self.access_token = access_token.strip()
-        self.ad_account_id = (
-            ad_account_id.strip() if ad_account_id.startswith("act_")
-            else f"act_{ad_account_id.strip()}"
-        )
+        aid = ad_account_id.strip()
+        self.ad_account_id = aid if aid.startswith("act_") else f"act_{aid}"
         self.session = requests.Session()
 
     def _call(self, endpoint: str, params: dict, method: str = "GET", retry: int = 0) -> dict:

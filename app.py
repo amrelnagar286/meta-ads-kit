@@ -28,6 +28,11 @@ from src.helpers import (
     safe_float, safe_int, safe_divide, insights_to_dataframe,
 )
 from src.kpi_engine import KPIEngine, STANDARD_KPIS
+from src.profile_manager import (
+    get_all_profiles, get_active_profile, get_active_profile_id,
+    set_active_profile, record_connection, record_extraction,
+    save_workspace,
+)
 
 # Configure logging
 (Path(__file__).parent / "logs").mkdir(exist_ok=True)
@@ -181,17 +186,60 @@ st.markdown(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
+    # ── Profile Switcher ──────────────────────────────────────────────────────
+    profiles = get_all_profiles()
+    active_profile = get_active_profile()
+    active_profile_id = get_active_profile_id()
+
+    if profiles:
+        profile_options = {pid: p["name"] for pid, p in profiles.items()}
+        color = active_profile.get("brand_color", "#0078D4") if active_profile else "#0078D4"
+        biz = active_profile.get("business_name", "") if active_profile else ""
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,{color},{color}CC);'
+            f'padding:10px 14px;border-radius:8px;margin-bottom:12px;">'
+            f'<span style="color:white;font-weight:600;font-size:0.95rem;">'
+            f'{active_profile["name"] if active_profile else "No Profile"}</span>'
+            f'<br><span style="color:rgba(255,255,255,0.8);font-size:0.8rem;">{biz}</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        selected_profile = st.selectbox(
+            "Switch Profile",
+            options=list(profile_options.keys()),
+            index=list(profile_options.keys()).index(active_profile_id) if active_profile_id in profile_options else 0,
+            format_func=lambda x: profile_options.get(x, x),
+            key="sidebar_profile_switch",
+        )
+        if selected_profile != active_profile_id:
+            set_active_profile(selected_profile)
+            new_p = profiles[selected_profile]
+            st.session_state.access_token = new_p.get("access_token", "")
+            st.session_state.ad_account_id = new_p.get("ad_account_id", "")
+            st.session_state.connected = False
+            st.session_state.campaigns_cache = None
+            st.rerun()
+
+        st.markdown("---")
+
+    # ── Connection ─────────────────────────────────────────────────────────────
     st.markdown("### Connection")
+
+    default_token = ""
+    default_account = ""
+    if active_profile:
+        default_token = active_profile.get("access_token", "")
+        default_account = active_profile.get("ad_account_id", "")
 
     token = st.text_input(
         "Access Token",
-        value=st.session_state.access_token or os.getenv("META_ACCESS_TOKEN", ""),
+        value=st.session_state.access_token or default_token or os.getenv("META_ACCESS_TOKEN", ""),
         type="password",
         key="input_token",
     )
     account_id = st.text_input(
         "Ad Account ID",
-        value=st.session_state.ad_account_id or os.getenv("META_AD_ACCOUNT_ID", ""),
+        value=st.session_state.ad_account_id or default_account or os.getenv("META_AD_ACCOUNT_ID", ""),
         placeholder="act_XXXXXXXXX",
         key="input_account",
     )
@@ -206,6 +254,8 @@ with st.sidebar:
                     ext = MetaAdsExtractor(token, account_id)
                     info = ext.validate_token()
                     st.session_state.connected = True
+                    if active_profile_id:
+                        record_connection(active_profile_id)
                     st.success(f"Connected as {info.get('name', 'User')}")
                 except Exception as e:
                     st.error(f"Connection failed: {str(e)[:100]}")
@@ -411,6 +461,8 @@ with tab_extract:
                 )
                 st.session_state.last_result = result
                 st.session_state.extraction_running = False
+                if active_profile_id:
+                    record_extraction(active_profile_id)
                 progress.progress(1.0)
                 status.text("Extraction complete!")
                 st.success(
@@ -521,7 +573,7 @@ with tab_kpi:
                         totals = {}
                         for col in df.select_dtypes(include=["number"]).columns:
                             totals[col] = float(df[col].sum())
-                        result_val = evaluate_formula(custom_formula, totals)
+                        result_val = evaluate_formula(custom_formula, totals, raise_errors=True)
                         st.metric("Result", f"{result_val:,.4f}")
                     except Exception as e:
                         st.error(f"Formula error: {e}")
