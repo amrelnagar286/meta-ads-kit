@@ -148,6 +148,9 @@ def _safe_eval_node(node: ast.AST, context: Dict[str, float]) -> float:
             raise ValueError(f"Unsupported function call: {ast.dump(node.func)}")
         fn = SAFE_FUNCS[node.func.id]
         args = [_safe_eval_node(a, context) for a in node.args]
+        # round() requires int for ndigits; pow() requires int for negative exponents
+        if node.func.id == "round" and len(args) > 1:
+            args[1] = int(args[1])
         return float(fn(*args))
     raise ValueError(f"Unsupported expression: {type(node).__name__}")
 
