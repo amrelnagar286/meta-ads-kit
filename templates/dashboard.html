@@ -289,6 +289,66 @@ function renderOverview() {
         `Columns: ${globalColumns.join(', ')}`;
 }
 
+function safeEvalFormula(expr, ctx) {
+    // Safe arithmetic-only evaluator — no eval/Function, only +,-,*,/,(),numbers,column names
+    const tokens = [];
+    let i = 0;
+    while (i < expr.length) {
+        if (' \t'.includes(expr[i])) { i++; continue; }
+        if ('+-*/()'.includes(expr[i])) { tokens.push(expr[i]); i++; continue; }
+        if (expr[i] >= '0' && expr[i] <= '9' || expr[i] === '.') {
+            let num = '';
+            while (i < expr.length && (expr[i] >= '0' && expr[i] <= '9' || expr[i] === '.')) { num += expr[i]; i++; }
+            tokens.push(parseFloat(num));
+            continue;
+        }
+        if (/[a-zA-Z_]/.test(expr[i])) {
+            let name = '';
+            while (i < expr.length && /[a-zA-Z0-9_]/.test(expr[i])) { name += expr[i]; i++; }
+            if (!(name in ctx)) throw new Error('Unknown variable: ' + name);
+            tokens.push(ctx[name]);
+            continue;
+        }
+        throw new Error('Invalid character: ' + expr[i]);
+    }
+    // Shunting-yard algorithm for arithmetic
+    const output = [], ops = [];
+    const prec = {'+':1,'-':1,'*':2,'/':2};
+    for (const t of tokens) {
+        if (typeof t === 'number') { output.push(t); }
+        else if ('+-*/'.includes(t)) {
+            while (ops.length && ops[ops.length-1] !== '(' && (prec[ops[ops.length-1]] || 0) >= (prec[t] || 0)) {
+                output.push(ops.pop());
+            }
+            ops.push(t);
+        } else if (t === '(') { ops.push(t); }
+        else if (t === ')') {
+            while (ops.length && ops[ops.length-1] !== '(') output.push(ops.pop());
+            if (!ops.length) throw new Error('Mismatched parentheses');
+            ops.pop();
+        }
+    }
+    while (ops.length) {
+        if (ops[ops.length-1] === '(') throw new Error('Mismatched parentheses');
+        output.push(ops.pop());
+    }
+    // Evaluate RPN
+    const stack = [];
+    for (const t of output) {
+        if (typeof t === 'number') { stack.push(t); }
+        else {
+            const b = stack.pop(), a = stack.pop();
+            if (a === undefined || b === undefined) throw new Error('Invalid expression');
+            if (t === '+') stack.push(a + b);
+            else if (t === '-') stack.push(a - b);
+            else if (t === '*') stack.push(a * b);
+            else if (t === '/') { if (b === 0) throw new Error('Division by zero'); stack.push(a / b); }
+        }
+    }
+    if (stack.length !== 1) throw new Error('Invalid expression');
+    return stack[0];
+}
+
 function evalFormula() {
     const formula = document.getElementById('formula-input').value;
     const result = document.getElementById('formula-result');
@@ -296,9 +356,9 @@ function evalFormula() {
     try {
         const ctx = {};
         globalColumns.forEach(c => { ctx[c] = sumCol(c); });
-        const fn = new Function(...Object.keys(ctx), 'return ' + formula);
-        const val = fn(...Object.values(ctx));
+        const val = safeEvalFormula(formula, ctx);
         result.textContent = typeof val === 'number' ? val.toFixed(4) : String(val);
+        result.style.color = 'var(--primary)';
     } catch (err) {
         result.textContent = 'Error: ' + err.message;
         result.style.color = 'var(--danger)';

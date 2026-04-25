@@ -274,6 +274,9 @@ class MetaAdsExtractor:
     def _preset_to_date_range(self, preset: str) -> tuple:
         """Convert a preset string to explicit (start_date, end_date) strings."""
         today = datetime.now().date()
+        last_month_end = today.replace(day=1) - timedelta(days=1)
+        last_month_start = last_month_end.replace(day=1)
+        quarter_month = ((today.month - 1) // 3) * 3 + 1
         mapping = {
             "today": (today, today),
             "yesterday": (today - timedelta(days=1), today - timedelta(days=1)),
@@ -285,7 +288,12 @@ class MetaAdsExtractor:
             "last_60d": (today - timedelta(days=60), today - timedelta(days=1)),
             "last_90d": (today - timedelta(days=90), today - timedelta(days=1)),
             "this_month": (today.replace(day=1), today),
+            "last_month": (last_month_start, last_month_end),
+            "this_quarter": (today.replace(month=quarter_month, day=1), today),
             "this_year": (today.replace(month=1, day=1), today),
+            "last_year": (today.replace(year=today.year - 1, month=1, day=1),
+                          today.replace(year=today.year - 1, month=12, day=31)),
+            "maximum": (today.replace(year=today.year - 5, month=1, day=1), today),
         }
         if preset in mapping:
             s, e = mapping[preset]
