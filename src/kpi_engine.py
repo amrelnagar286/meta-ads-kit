@@ -214,3 +214,9 @@ class KPIEngine:
             return df
         agg = df.groupby(group_cols)[numeric_cols].sum().reset_index()
         return self.compute_all(agg)
+
+
+def compute_kpis(df: pd.DataFrame) -> pd.DataFrame:
+    """Convenience function — compute all standard KPIs on a DataFrame."""
+    engine = KPIEngine()
+    return engine.compute_all(df)

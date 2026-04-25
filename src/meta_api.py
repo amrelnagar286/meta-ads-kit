@@ -119,7 +119,7 @@ class MetaAPIManager:
         params = {"access_token": self.access_token}
         for k, v in kwargs.items():
             if k in ("daily_budget", "lifetime_budget") and v is not None:
-                params[k] = int(v) * 100
+                params[k] = int(round(float(v) * 100))
             elif v is not None:
                 params[k] = v
         return self._call(campaign_id, params, method="POST")
@@ -196,7 +196,7 @@ class MetaAPIManager:
         params = {"access_token": self.access_token}
         for k, v in kwargs.items():
             if k in ("daily_budget", "lifetime_budget", "bid_amount") and v is not None:
-                params[k] = int(v) * 100
+                params[k] = int(round(float(v) * 100))
             elif k == "targeting" and isinstance(v, dict):
                 params[k] = json.dumps(v)
             elif v is not None:
@@ -433,9 +433,9 @@ class MetaAPIManager:
                 eid = upd["id"]
                 params = {"access_token": self.access_token}
                 if "daily_budget" in upd:
-                    params["daily_budget"] = int(upd["daily_budget"]) * 100
+                    params["daily_budget"] = int(round(float(upd["daily_budget"]) * 100))
                 if "lifetime_budget" in upd:
-                    params["lifetime_budget"] = int(upd["lifetime_budget"]) * 100
+                    params["lifetime_budget"] = int(round(float(upd["lifetime_budget"]) * 100))
                 r = self._call(eid, params, method="POST")
                 results.append({"id": eid, "status": "success", "result": r})
             except Exception as e:

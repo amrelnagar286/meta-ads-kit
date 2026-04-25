@@ -215,7 +215,7 @@ with tab_alerts:
                 # Bleeders: high spend, low CTR
                 bleeders = df[
                     (df["spend"] >= min_spend) &
-                    (safe_divide(df["clicks"], df["impressions"]) * 100 < ctr_threshold)
+                    (df.apply(lambda r: safe_divide(r["clicks"], r["impressions"]) * 100, axis=1) < ctr_threshold)
                 ]
                 if not bleeders.empty:
                     st.markdown(f'<div class="alert-critical"><b>Bleeders Found ({len(bleeders)})</b><br>'
