@@ -62,7 +62,7 @@ class MetaAdsExtractor:
     ):
         self.access_token = access_token.strip()
         self.ad_account_id = (
-            ad_account_id
+            ad_account_id.strip()
             if ad_account_id.startswith("act_")
             else f"act_{ad_account_id.strip()}"
         )

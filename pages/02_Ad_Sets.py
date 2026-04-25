@@ -215,7 +215,7 @@ with tab_create:
                 result = api.create_adset(
                     campaign_id=as_campaign_id,
                     name=as_name,
-                    daily_budget=int(as_budget),
+                    daily_budget=as_budget,
                     optimization_goal=as_opt_goal,
                     billing_event=as_billing,
                     targeting=targeting,

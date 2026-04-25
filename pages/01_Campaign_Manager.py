@@ -286,8 +286,8 @@ with tab_create:
                     name=camp_name,
                     objective=CAMPAIGN_OBJECTIVES[camp_objective],
                     status=camp_status,
-                    daily_budget=int(budget_amount) if budget_type == "Daily" else None,
-                    lifetime_budget=int(budget_amount) if budget_type == "Lifetime" else None,
+                    daily_budget=budget_amount if budget_type == "Daily" else None,
+                    lifetime_budget=budget_amount if budget_type == "Lifetime" else None,
                     bid_strategy=BID_STRATEGIES[bid_strategy],
                     special_ad_categories=[s for s in special_cats if s != "NONE"],
                 )

@@ -170,8 +170,20 @@ with tab_allocate:
                     results = api.batch_update_budgets(updates)
                     for r in results:
                         st.write(f"{r['id']}: {r['status']}")
+                elif allocation_method == "Custom Weights":
+                    total_weight = sum(weights.values())
+                    if total_weight > 0:
+                        updates = []
+                        for c in campaigns:
+                            pct = weights[c["id"]] / total_weight
+                            updates.append({"id": c["id"], "daily_budget": total_budget * pct})
+                        results = api.batch_update_budgets(updates)
+                        for r in results:
+                            st.write(f"{r['id']}: {r['status']}")
+                    else:
+                        st.error("All weights are zero. Set at least one weight above 0.")
                 else:
-                    st.info("Custom allocation applied based on weights.")
+                    st.warning("Performance-based allocation requires historical data. Run an extraction first.")
     except Exception as e:
         st.error(f"Failed: {e}")
 

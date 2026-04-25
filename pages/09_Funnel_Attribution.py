@@ -76,10 +76,21 @@ with tab_funnel:
                     if "purchase" in col.lower() and "value" not in col.lower() and "roas" not in col.lower():
                         purchases += safe_int(df[col].sum())
 
+                estimated = False
                 if conversions == 0:
                     conversions = int(clicks * 0.03)
+                    estimated = True
                 if purchases == 0:
                     purchases = int(conversions * 0.4)
+                    estimated = True
+
+                if estimated:
+                    st.warning(
+                        "Conversion and purchase data not found in your account. "
+                        "Values shown below are **estimates** based on industry averages "
+                        "(3% click-to-conversion, 40% conversion-to-purchase). "
+                        "Set up the Meta Pixel or Conversions API for real data."
+                    )
 
                 # Funnel visualization
                 funnel_steps = [

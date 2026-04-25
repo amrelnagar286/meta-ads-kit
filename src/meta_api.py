@@ -21,7 +21,7 @@ class MetaAPIManager:
     def __init__(self, access_token: str, ad_account_id: str):
         self.access_token = access_token.strip()
         self.ad_account_id = (
-            ad_account_id if ad_account_id.startswith("act_")
+            ad_account_id.strip() if ad_account_id.startswith("act_")
             else f"act_{ad_account_id.strip()}"
         )
         self.session = requests.Session()
@@ -95,8 +95,8 @@ class MetaAPIManager:
         return self._paginate(f"{self.ad_account_id}/campaigns", params)
 
     def create_campaign(self, name: str, objective: str, status: str = "PAUSED",
-                        daily_budget: Optional[int] = None,
-                        lifetime_budget: Optional[int] = None,
+                        daily_budget: Optional[float] = None,
+                        lifetime_budget: Optional[float] = None,
                         bid_strategy: Optional[str] = None,
                         special_ad_categories: Optional[List[str]] = None) -> dict:
         params = {
@@ -106,9 +106,9 @@ class MetaAPIManager:
             "status": status,
         }
         if daily_budget:
-            params["daily_budget"] = daily_budget * 100
+            params["daily_budget"] = int(round(float(daily_budget) * 100))
         if lifetime_budget:
-            params["lifetime_budget"] = lifetime_budget * 100
+            params["lifetime_budget"] = int(round(float(lifetime_budget) * 100))
         if bid_strategy:
             params["bid_strategy"] = bid_strategy
         if special_ad_categories is not None:
@@ -162,11 +162,11 @@ class MetaAPIManager:
             }])
         return self._paginate(endpoint, params)
 
-    def create_adset(self, campaign_id: str, name: str, daily_budget: int,
+    def create_adset(self, campaign_id: str, name: str, daily_budget: float,
                      optimization_goal: str, billing_event: str,
                      targeting: dict, status: str = "PAUSED",
                      bid_strategy: Optional[str] = None,
-                     bid_amount: Optional[int] = None,
+                     bid_amount: Optional[float] = None,
                      start_time: Optional[str] = None,
                      end_time: Optional[str] = None,
                      promoted_object: Optional[dict] = None) -> dict:
@@ -174,7 +174,7 @@ class MetaAPIManager:
             "access_token": self.access_token,
             "campaign_id": campaign_id,
             "name": name,
-            "daily_budget": daily_budget * 100,
+            "daily_budget": int(round(float(daily_budget) * 100)),
             "optimization_goal": optimization_goal,
             "billing_event": billing_event,
             "targeting": json.dumps(targeting),
@@ -183,7 +183,7 @@ class MetaAPIManager:
         if bid_strategy:
             params["bid_strategy"] = bid_strategy
         if bid_amount:
-            params["bid_amount"] = bid_amount * 100
+            params["bid_amount"] = int(round(float(bid_amount) * 100))
         if start_time:
             params["start_time"] = start_time
         if end_time:
