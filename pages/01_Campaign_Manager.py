@@ -112,8 +112,8 @@ with tab_all:
                     "Lifetime Budget": format_currency(lifetime_b) if lifetime_b else "-",
                     "Budget Remaining": format_currency(budget_remaining) if budget_remaining else "-",
                     "Bid Strategy": c.get("bid_strategy", ""),
-                    "Created": c.get("created_time", "")[:10],
-                    "Updated": c.get("updated_time", "")[:10],
+                    "Created": (c.get("created_time") or "")[:10],
+                    "Updated": (c.get("updated_time") or "")[:10],
                 })
 
             df = pd.DataFrame(rows)

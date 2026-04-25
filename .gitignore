@@ -21,6 +21,7 @@ env/
 # Secrets
 .env
 config/google_credentials.json
+profiles/
 
 # Output data
 output/
