@@ -181,7 +181,7 @@ with tab_all:
                             except Exception as e:
                                 st.error(f"Failed {cid}: {e}")
                 with col_a5:
-                    new_budget = st.number_input("New Daily Budget ($)", min_value=0.0, step=5.0, key="cm_budget_chg")
+                    new_budget = st.number_input("New Daily Budget ($)", min_value=1.0, step=5.0, key="cm_budget_chg")
                     if st.button("Update Budget", use_container_width=True):
                         updates = [{"id": cid, "daily_budget": new_budget} for cid in selected_camps]
                         results = api.batch_update_budgets(updates)

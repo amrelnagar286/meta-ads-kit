@@ -8,6 +8,7 @@ import re
 import io
 import json
 import time
+import threading
 import zipfile
 import logging
 from datetime import datetime, timedelta
@@ -65,7 +66,7 @@ class MetaAdsExtractor:
         self.ad_account_id = aid if aid.startswith("act_") else f"act_{aid}"
         self.output_dir = output_dir
         self.progress_cb = progress_cb
-        self.session = build_session()
+        self._thread_local = threading.local()
         self.run_started_at = datetime.now()
         self.results: Dict[str, pd.DataFrame] = {}
         self.manifest: Dict[str, Any] = {
@@ -79,6 +80,12 @@ class MetaAdsExtractor:
     # API COMMUNICATION
     # ═══════════════════════════════════════════════════════════════════════════
 
+    def _get_session(self) -> requests.Session:
+        """Return a per-thread requests.Session for thread-safe HTTP calls."""
+        if not hasattr(self._thread_local, "session"):
+            self._thread_local.session = build_session()
+        return self._thread_local.session
+
     def _api_call(
         self,
         endpoint: str,
@@ -87,7 +94,8 @@ class MetaAdsExtractor:
         retry: int = 0,
     ) -> dict:
         url = f"{BASE_URL}/{endpoint}"
-        response = self.session.request(
+        session = self._get_session()
+        response = session.request(
             method, url,
             params=params if method == "GET" else None,
             data=params if method != "GET" else None,

@@ -251,7 +251,9 @@ with tab_targeting:
                 results = api.get_targeting_search(interest_search)
                 if results:
                     for r in results[:15]:
-                        st.write(f"- **{r.get('name', '')}** (ID: {r.get('id', '')}, audience: {r.get('audience_size', 'N/A'):,})")
+                        audience = r.get('audience_size', 'N/A')
+                        audience_str = f"{audience:,}" if isinstance(audience, (int, float)) else str(audience)
+                        st.write(f"- **{r.get('name', '')}** (ID: {r.get('id', '')}, audience: {audience_str})")
                 else:
                     st.info("No results found.")
             except Exception as e:
