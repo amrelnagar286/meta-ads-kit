@@ -650,7 +650,10 @@ with tab_explore:
                     sel_corr_cols = st.multiselect("Select columns", numeric_cols, default=numeric_cols[:8], key="corr_cols")
                     if len(sel_corr_cols) >= 2:
                         corr = df_display[sel_corr_cols].corr()
-                        st.dataframe(corr.style.background_gradient(cmap="RdBu", vmin=-1, vmax=1), use_container_width=True)
+                        try:
+                            st.dataframe(corr.style.background_gradient(cmap="RdBu", vmin=-1, vmax=1), use_container_width=True)
+                        except ImportError:
+                            st.dataframe(corr, use_container_width=True)
             else:
                 st.info("No numeric columns found for statistical analysis.")
 
