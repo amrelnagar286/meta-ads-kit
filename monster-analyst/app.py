@@ -51,11 +51,11 @@ if "computed_metrics_df" not in st.session_state:
 
 def get_active_df() -> pd.DataFrame:
     """Get the currently active dataset."""
-    if st.session_state.merged_data is not None:
-        return st.session_state.merged_data
     name = st.session_state.active_dataset
     if name and name in st.session_state.datasets:
         return st.session_state.datasets[name]
+    if st.session_state.merged_data is not None:
+        return st.session_state.merged_data
     return pd.DataFrame()
 
 
@@ -429,6 +429,8 @@ with tab_kpi:
                                         badge = '<span class="badge-warning">Warning</span>'
                                     elif value >= critical_t:
                                         badge = '<span class="badge-critical">Critical</span>'
+                                    else:
+                                        badge = '<span class="badge-warning">Warning</span>'
                                 else:
                                     # Higher is better (e.g. ROAS, hook rate)
                                     if healthy_t is not None and value >= healthy_t:
@@ -437,6 +439,8 @@ with tab_kpi:
                                         badge = '<span class="badge-warning">Warning</span>'
                                     elif critical_t is not None and value <= critical_t:
                                         badge = '<span class="badge-critical">Critical</span>'
+                                    else:
+                                        badge = '<span class="badge-warning">Warning</span>'
 
                             st.markdown(
                                 f'<div class="metric-card">'

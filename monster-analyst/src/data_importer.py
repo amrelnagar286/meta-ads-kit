@@ -332,7 +332,12 @@ def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize column names to canonical form."""
     result = df.copy()
     rename_map = {}
+    # Pre-seed with columns that are already in canonical form
     used_targets = set()
+    for col in result.columns:
+        canonical = col.lower().strip().replace(" ", "_")
+        if canonical == col and canonical not in COLUMN_ALIASES:
+            used_targets.add(canonical)
     for col in result.columns:
         normalized = col.lower().strip().replace(" ", "_")
         if normalized in COLUMN_ALIASES:

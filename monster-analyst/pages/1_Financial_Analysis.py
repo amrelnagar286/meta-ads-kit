@@ -20,11 +20,11 @@ st.markdown(
 
 
 def get_active_df():
-    if st.session_state.get("merged_data") is not None:
-        return st.session_state.merged_data
     name = st.session_state.get("active_dataset")
     if name and name in st.session_state.get("datasets", {}):
         return st.session_state.datasets[name]
+    if st.session_state.get("merged_data") is not None:
+        return st.session_state.merged_data
     return pd.DataFrame()
 
 
