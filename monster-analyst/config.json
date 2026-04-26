@@ -1,0 +1,21 @@
+{
+    "app_name": "Monster Data Analyst",
+    "version": "1.0.0",
+    "streamlit_port": 8501,
+    "max_upload_size_mb": 200,
+    "default_benchmarks": {
+        "target_ctr": 2.0,
+        "target_roas": 3.0,
+        "max_frequency": 3.5,
+        "max_cpa": 50.0,
+        "hook_rate_healthy": 25.0,
+        "hold_rate_healthy": 30.0,
+        "fatigue_critical": 2.5,
+        "ghost_rate_critical": 40.0,
+        "breakeven_roas": 2.5,
+        "cogs_avg": 15.0
+    },
+    "supported_formats": ["csv", "json", "xlsx", "xls", "google_sheets"],
+    "metric_categories": 8,
+    "total_metrics": 50
+}

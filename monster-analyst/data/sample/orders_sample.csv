@@ -1,0 +1,16 @@
+order_id,ad_id,order_date,order_value,customer_name,product,quantity,source,is_new_customer
+ORD001,ad_004,2024-07-03,85.00,Ahmed Hassan,Pharma Product A,2,WhatsApp,yes
+ORD002,ad_004,2024-07-05,120.00,Fatima Ali,Pharma Product B,1,WhatsApp,yes
+ORD003,ad_005,2024-07-06,65.00,Omar Khalil,Beauty Product C,1,WhatsApp,yes
+ORD004,ad_004,2024-07-08,95.00,Sara Mohamed,Pharma Product A,1,WhatsApp,no
+ORD005,ad_005,2024-07-10,150.00,Youssef Ibrahim,Beauty Kit,1,WhatsApp,yes
+ORD006,ad_004,2024-07-12,200.00,Nour Abdel,Pharma Bundle,3,WhatsApp,yes
+ORD007,ad_005,2024-07-14,45.00,Layla Mansour,Beauty Serum,1,WhatsApp,no
+ORD008,ad_004,2024-07-16,110.00,Khaled Nasser,Pharma Product C,2,WhatsApp,yes
+ORD009,ad_005,2024-07-18,80.00,Hana Saeed,Beauty Set,1,WhatsApp,yes
+ORD010,ad_004,2024-07-20,175.00,Tariq Omar,Pharma Bundle,2,WhatsApp,no
+ORD011,ad_005,2024-07-22,55.00,Mona Rashid,Beauty Cream,1,WhatsApp,yes
+ORD012,ad_004,2024-07-24,130.00,Waleed Faris,Pharma Product A,2,WhatsApp,yes
+ORD013,ad_005,2024-07-26,90.00,Dina Sami,Beauty Kit Mini,1,WhatsApp,no
+ORD014,ad_004,2024-07-28,160.00,Amr Gamal,Pharma Product B,3,WhatsApp,yes
+ORD015,ad_005,2024-07-30,70.00,Rania Abbas,Beauty Mask,2,WhatsApp,yes
