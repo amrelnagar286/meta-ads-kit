@@ -6,6 +6,15 @@ import pandas as pd
 import numpy as np
 from typing import Any
 
+
+def strip_timezone_for_excel(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy of *df* with timezone-aware datetime columns made naive."""
+    out = df.copy()
+    for c in out.columns:
+        if hasattr(out[c], "dt") and hasattr(out[c].dt, "tz") and out[c].dt.tz is not None:
+            out[c] = out[c].dt.tz_localize(None)
+    return out
+
 # ---------------------------------------------------------------------------
 # PERSISTENT CUSTOM METRICS
 # ---------------------------------------------------------------------------

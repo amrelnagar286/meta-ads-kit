@@ -10,7 +10,7 @@ import logging
 import streamlit as st
 import pandas as pd
 
-from src.helpers import WINDOWS_11_CSS, load_custom_metrics, save_custom_metrics
+from src.helpers import WINDOWS_11_CSS, load_custom_metrics, save_custom_metrics, strip_timezone_for_excel
 from src.data_importer import (
     import_csv, import_excel, import_json, import_google_sheet,
     normalize_columns, detect_column_types, coerce_column_types,
@@ -947,7 +947,7 @@ with tab_export:
             with col_excel:
                 buffer = io.BytesIO()
                 with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-                    export_data.to_excel(writer, index=False, sheet_name="Analysis")
+                    strip_timezone_for_excel(export_data).to_excel(writer, index=False, sheet_name="Analysis")
                 st.download_button(
                     "Download Excel",
                     buffer.getvalue(),
@@ -972,7 +972,7 @@ with tab_export:
             with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
                 for name, df in st.session_state.datasets.items():
                     sheet_name = name[:31].replace("/", "_").replace(":", "_")
-                    df.to_excel(writer, index=False, sheet_name=sheet_name)
+                    strip_timezone_for_excel(df).to_excel(writer, index=False, sheet_name=sheet_name)
             st.download_button(
                 "Download All Datasets (Excel)",
                 buffer.getvalue(),

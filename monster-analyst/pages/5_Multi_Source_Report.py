@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, render_quick_add_metric, strip_timezone_for_excel
 from src.formula_engine import evaluate_formula, bulk_apply_metrics
 from src.metric_catalog import METRICS, get_metrics_for_available_columns
 
@@ -177,7 +177,7 @@ with col_csv:
 with col_excel:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Report")
+        strip_timezone_for_excel(df).to_excel(writer, index=False, sheet_name="Report")
     st.download_button("Download Full Report (Excel)", buffer.getvalue(), file_name="monster_report.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
