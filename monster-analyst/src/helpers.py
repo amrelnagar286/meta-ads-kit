@@ -1,8 +1,71 @@
 """Shared utility functions."""
 
+import os
+import json
 import pandas as pd
 import numpy as np
 from typing import Any
+
+# ---------------------------------------------------------------------------
+# PERSISTENT CUSTOM METRICS
+# ---------------------------------------------------------------------------
+CUSTOM_METRICS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "custom_metrics.json")
+
+
+def load_custom_metrics() -> list:
+    """Load user-defined custom metrics from local JSON file."""
+    if os.path.exists(CUSTOM_METRICS_FILE):
+        try:
+            with open(CUSTOM_METRICS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return []
+    return []
+
+
+def save_custom_metrics(metrics: list):
+    """Save user-defined custom metrics to local JSON file."""
+    os.makedirs(os.path.dirname(CUSTOM_METRICS_FILE), exist_ok=True)
+    with open(CUSTOM_METRICS_FILE, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, indent=2, ensure_ascii=False)
+
+
+def render_quick_add_metric(page_key: str):
+    """Render a 'Quick Add Custom Metric' expander. Call from any page."""
+    import streamlit as st
+    from src.formula_engine import validate_formula
+
+    with st.expander("Quick Add Custom Metric"):
+        qc_name = st.text_input("Name", placeholder="My Custom Metric", key=f"{page_key}_qc_name")
+        qc_formula = st.text_input("Formula", placeholder="purchase_conversion_value / spend", key=f"{page_key}_qc_formula")
+        qc_unit = st.selectbox("Unit", ["number", "currency", "percentage", "ratio"], key=f"{page_key}_qc_unit")
+        if st.button("Save Permanently", type="primary", key=f"{page_key}_qc_save"):
+            if qc_name and qc_formula:
+                error = validate_formula(qc_formula)
+                if error:
+                    st.error(f"Invalid formula: {error}")
+                else:
+                    metrics = load_custom_metrics()
+                    new_cm = {
+                        "id": qc_name.lower().replace(" ", "_"),
+                        "name": qc_name,
+                        "name_ar": qc_name,
+                        "formula": qc_formula,
+                        "category": "custom",
+                        "unit": qc_unit,
+                    }
+                    existing_ids = {m["id"] for m in metrics}
+                    if new_cm["id"] not in existing_ids:
+                        metrics.append(new_cm)
+                        save_custom_metrics(metrics)
+                        if "custom_metrics" in st.session_state:
+                            st.session_state.custom_metrics = metrics
+                        st.success(f"Saved '{qc_name}' permanently")
+                        st.rerun()
+                    else:
+                        st.info(f"Metric '{qc_name}' already exists.")
+            else:
+                st.warning("Enter both a name and a formula.")
 
 
 def safe_divide(a: Any, b: Any, default: float = 0.0) -> float:
@@ -123,8 +186,49 @@ html, body, [class*="css"] {
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, #001f3f 0%, #002050 50%, #001530 100%);
 }
-section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] label {
-    color: #c0d8f0 !important;
+section[data-testid="stSidebar"] .stMarkdown,
+section[data-testid="stSidebar"] .stMarkdown p,
+section[data-testid="stSidebar"] .stMarkdown li,
+section[data-testid="stSidebar"] .stMarkdown h1,
+section[data-testid="stSidebar"] .stMarkdown h2,
+section[data-testid="stSidebar"] .stMarkdown h3,
+section[data-testid="stSidebar"] .stMarkdown h4,
+section[data-testid="stSidebar"] .stMarkdown strong,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] .stSelectbox label,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] .stRadio label,
+section[data-testid="stSidebar"] .stTextInput label,
+section[data-testid="stSidebar"] .stNumberInput label,
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] {
+    color: #e8f0fe !important;
+}
+section[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff !important;
+}
+section[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] * {
+    color: #ffffff !important;
+}
+section[data-testid="stSidebar"] hr {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+section[data-testid="stSidebar"] .metric-card {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+section[data-testid="stSidebar"] .metric-card h3 {
+    color: #7ec8e3 !important;
+}
+section[data-testid="stSidebar"] .metric-card .metric-value {
+    color: #ffffff !important;
+}
+section[data-testid="stSidebar"] .metric-card .metric-trend {
+    color: #a0c4e8 !important;
+}
+section[data-testid="stSidebar"] .stAlert {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e8f0fe !important;
 }
 
 /* Tabs */

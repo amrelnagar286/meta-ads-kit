@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
 
 st.set_page_config(page_title="Funnel Analysis", page_icon="🔻", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -174,3 +174,6 @@ if group_cols:
         grouped[rate_name] = (grouped[curr_col] / grouped[prev_col].replace(0, float("nan")) * 100).round(2)
 
     st.dataframe(grouped, use_container_width=True, hide_index=True)
+
+st.markdown("---")
+render_quick_add_metric("funnel")

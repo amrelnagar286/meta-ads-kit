@@ -8,7 +8,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
 
 st.set_page_config(page_title="Algorithm Health", page_icon="🤖", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -209,3 +209,6 @@ if recommendations:
         st.markdown(f'<div class="metric-card" style="border-left: 4px solid #FF8C00;">{rec}</div>', unsafe_allow_html=True)
 else:
     st.success("Algorithm health is stable. No critical issues detected.")
+
+st.markdown("---")
+render_quick_add_metric("algo")

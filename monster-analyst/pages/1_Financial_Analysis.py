@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
 from src.formula_engine import apply_formula_to_df, evaluate_formula
 
 st.set_page_config(page_title="Financial Analysis", page_icon="💰", layout="wide")
@@ -135,3 +135,6 @@ if has_spend and has_revenue:
 
 else:
     st.warning("Need columns: `spend` and `purchase_conversion_value` (or `revenue`) for financial analysis.")
+
+st.markdown("---")
+render_quick_add_metric("fin")

@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS
+from src.helpers import WINDOWS_11_CSS, render_quick_add_metric
 from src.formula_engine import evaluate_formula, bulk_apply_metrics
 from src.metric_catalog import METRICS, get_metrics_for_available_columns
 
@@ -180,3 +180,6 @@ with col_excel:
         df.to_excel(writer, index=False, sheet_name="Report")
     st.download_button("Download Full Report (Excel)", buffer.getvalue(), file_name="monster_report.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+st.markdown("---")
+render_quick_add_metric("report")

@@ -6,7 +6,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-from src.helpers import WINDOWS_11_CSS, safe_divide
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
 
 st.set_page_config(page_title="Messaging Analysis", page_icon="💬", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -211,3 +211,6 @@ with st.expander("How to Link Orders with Ad Data"):
     |-------|-----------|-------------|---------------|---------|
     | 123456 | 2024-01-15 | 150.00 | Ahmed | Product A |
     """)
+
+st.markdown("---")
+render_quick_add_metric("msg")

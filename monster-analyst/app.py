@@ -10,7 +10,7 @@ import logging
 import streamlit as st
 import pandas as pd
 
-from src.helpers import WINDOWS_11_CSS
+from src.helpers import WINDOWS_11_CSS, load_custom_metrics, save_custom_metrics
 from src.data_importer import (
     import_csv, import_excel, import_json, import_google_sheet,
     normalize_columns, detect_column_types, coerce_column_types,
@@ -21,6 +21,7 @@ from src.formula_engine import apply_formula_to_df, evaluate_formula, validate_f
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("MonsterAnalyst")
+
 
 st.set_page_config(
     page_title="Monster Data Analyst",
@@ -42,7 +43,7 @@ if "dataset_sources" not in st.session_state:
 if "merged_data" not in st.session_state:
     st.session_state.merged_data = None
 if "custom_metrics" not in st.session_state:
-    st.session_state.custom_metrics = []  # user-defined custom metrics
+    st.session_state.custom_metrics = load_custom_metrics()
 if "active_dataset" not in st.session_state:
     st.session_state.active_dataset = None
 if "computed_metrics_df" not in st.session_state:
@@ -265,7 +266,8 @@ with tab_link:
     ds_names = list(st.session_state.datasets.keys())
 
     if len(ds_names) < 2:
-        st.info("Upload at least 2 datasets to link them. Use the Import tab to add data sources.")
+        st.info("**This step is optional.** You can analyze a single dataset without linking. "
+                "To link/merge, upload 2+ datasets in the Import tab (e.g. Meta CSV + Orders sheet).")
     else:
         from src.data_linker import suggest_join_columns, join_datasets, join_preview as _join_preview
 
@@ -459,6 +461,66 @@ with tab_kpi:
                                 f'</div>',
                                 unsafe_allow_html=True,
                             )
+
+            # Show saved custom metrics in KPI dashboard too
+            if st.session_state.custom_metrics:
+                st.markdown(
+                    '<div class="section-title" style="background: #00B7C3;">Custom Metrics (Saved)</div>',
+                    unsafe_allow_html=True,
+                )
+                custom_cols = st.columns(min(len(st.session_state.custom_metrics), 5))
+                for i, cm in enumerate(st.session_state.custom_metrics):
+                    with custom_cols[i % len(custom_cols)]:
+                        try:
+                            val = evaluate_formula(cm["formula"], agg_ctx)
+                            unit = cm.get("unit", "number")
+                            if unit == "currency":
+                                disp = f"${val:,.2f}"
+                            elif unit == "percentage":
+                                disp = f"{val:.2f}%"
+                            elif unit == "ratio":
+                                disp = f"{val:.2f}"
+                            else:
+                                disp = f"{val:,.2f}"
+                            st.markdown(
+                                f'<div class="metric-card"><h3>{cm["name"]}</h3>'
+                                f'<div class="metric-value">{disp}</div>'
+                                f'<div class="metric-trend">{cm.get("name_ar", "")}</div></div>',
+                                unsafe_allow_html=True,
+                            )
+                        except Exception:
+                            st.markdown(
+                                f'<div class="metric-card"><h3>{cm["name"]}</h3>'
+                                f'<div class="metric-value">N/A</div>'
+                                f'<div class="metric-trend">{cm.get("description", "")}</div></div>',
+                                unsafe_allow_html=True,
+                            )
+
+            # Quick add custom metric inline
+            with st.expander("Quick Add Custom Metric"):
+                qc_name = st.text_input("Name", placeholder="My ROAS", key="kpi_qc_name")
+                qc_formula = st.text_input("Formula", placeholder="purchase_conversion_value / spend", key="kpi_qc_formula")
+                qc_unit = st.selectbox("Unit", ["number", "currency", "percentage", "ratio"], key="kpi_qc_unit")
+                if st.button("Save & Add", type="primary", key="kpi_qc_save"):
+                    if qc_name and qc_formula:
+                        error = validate_formula(qc_formula)
+                        if error:
+                            st.error(f"Invalid formula: {error}")
+                        else:
+                            new_cm = {
+                                "id": qc_name.lower().replace(" ", "_"),
+                                "name": qc_name,
+                                "name_ar": qc_name,
+                                "formula": qc_formula,
+                                "category": "custom",
+                                "unit": qc_unit,
+                            }
+                            existing_ids = {m["id"] for m in st.session_state.custom_metrics}
+                            if new_cm["id"] not in existing_ids:
+                                st.session_state.custom_metrics.append(new_cm)
+                            save_custom_metrics(st.session_state.custom_metrics)
+                            st.success(f"Saved '{qc_name}'")
+                            st.rerun()
 
             # Row-level metric computation
             st.markdown("---")
@@ -671,9 +733,12 @@ with tab_metrics:
                 st.code(", ".join(active_df.columns.tolist()))
 
         custom_name = st.text_input("Metric Name", placeholder="My Custom ROAS", key="custom_name")
+        custom_name_ar = st.text_input("Arabic Name (optional)", placeholder="", key="custom_name_ar")
         custom_formula = st.text_input("Formula", placeholder="purchase_conversion_value / spend", key="custom_formula")
+        custom_unit = st.selectbox("Unit", ["number", "currency", "percentage", "ratio"], key="custom_unit")
+        custom_desc = st.text_input("Description (optional)", placeholder="What this metric measures", key="custom_desc")
 
-        col_validate, col_apply = st.columns(2)
+        col_validate, col_apply, col_save = st.columns(3)
         with col_validate:
             if st.button("Validate Formula", key="btn_validate"):
                 if custom_formula:
@@ -692,16 +757,63 @@ with tab_metrics:
                         preview = active_df.copy()
                         preview[custom_name] = result
                         st.dataframe(preview[[active_df.columns[0], custom_name]].head(10), use_container_width=True, hide_index=True)
-                        # Save to custom metrics
-                        st.session_state.custom_metrics.append({
-                            "id": custom_name.lower().replace(" ", "_"),
-                            "name": custom_name,
-                            "formula": custom_formula,
-                            "category": "custom",
-                        })
                         st.success(f"Applied '{custom_name}' to {len(active_df):,} rows")
                     except Exception as e:
                         st.error(f"Error: {e}")
+        with col_save:
+            if st.button("Save Permanently", key="btn_save_custom"):
+                if custom_formula and custom_name:
+                    new_metric = {
+                        "id": custom_name.lower().replace(" ", "_"),
+                        "name": custom_name,
+                        "name_ar": custom_name_ar or custom_name,
+                        "formula": custom_formula,
+                        "category": "custom",
+                        "unit": custom_unit,
+                        "description": custom_desc or "",
+                    }
+                    existing_ids = {m["id"] for m in st.session_state.custom_metrics}
+                    if new_metric["id"] in existing_ids:
+                        st.session_state.custom_metrics = [
+                            m if m["id"] != new_metric["id"] else new_metric
+                            for m in st.session_state.custom_metrics
+                        ]
+                        st.success(f"Updated '{custom_name}' (saved permanently)")
+                    else:
+                        st.session_state.custom_metrics.append(new_metric)
+                        st.success(f"Saved '{custom_name}' permanently")
+                    save_custom_metrics(st.session_state.custom_metrics)
+                else:
+                    st.warning("Enter both a name and a formula.")
+
+        # Show saved custom metrics
+        if st.session_state.custom_metrics:
+            st.markdown("---")
+            st.markdown("#### Saved Custom Metrics")
+            cm_data = []
+            for m in st.session_state.custom_metrics:
+                cm_data.append({
+                    "Name": m["name"],
+                    "Arabic": m.get("name_ar", ""),
+                    "Formula": m["formula"],
+                    "Unit": m.get("unit", "number"),
+                    "Description": m.get("description", ""),
+                })
+            st.dataframe(pd.DataFrame(cm_data), use_container_width=True, hide_index=True)
+
+            # Delete custom metric
+            del_metric = st.selectbox(
+                "Remove a saved metric",
+                ["(none)"] + [m["name"] for m in st.session_state.custom_metrics],
+                key="del_custom_metric",
+            )
+            if del_metric != "(none)" and st.button("Delete Selected Metric", key="btn_del_custom"):
+                st.session_state.custom_metrics = [
+                    m for m in st.session_state.custom_metrics if m["name"] != del_metric
+                ]
+                save_custom_metrics(st.session_state.custom_metrics)
+                st.success(f"Deleted '{del_metric}'")
+                st.rerun()
 
     # ------ Bulk Metrics ------
     with metric_tabs[2]:

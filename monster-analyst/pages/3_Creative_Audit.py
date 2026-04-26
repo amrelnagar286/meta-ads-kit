@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
 from src.formula_engine import evaluate_formula
 
 st.set_page_config(page_title="Creative Audit", page_icon="🎨", layout="wide")
@@ -196,3 +196,6 @@ if alerts:
         st.markdown(f'<div class="metric-card" style="border-left: 4px solid #D13438;">{alert}</div>', unsafe_allow_html=True)
 else:
     st.success("No critical alerts. Creative health looks good!")
+
+st.markdown("---")
+render_quick_add_metric("creative")
