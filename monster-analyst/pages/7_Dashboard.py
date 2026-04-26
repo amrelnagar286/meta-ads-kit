@@ -40,8 +40,8 @@ _computed = st.session_state.get("computed_metrics_df")
 df = _computed if _computed is not None else active_df
 
 # Identify column types
-numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+numeric_cols = df.select_dtypes(include="number").columns.tolist()
+categorical_cols = df.select_dtypes(include=["object", "category", "string"]).columns.tolist()
 date_cols = [c for c in df.columns if "date" in c.lower() or "time" in c.lower() or "day" in c.lower()]
 all_cols = df.columns.tolist()
 
@@ -443,7 +443,11 @@ with dash_tabs[6]:
         missing = df[col].isnull().sum()
         unique = df[col].nunique()
         dtype = str(df[col].dtype)
-        zeros = (df[col] == 0).sum() if np.issubdtype(df[col].dtype, np.number) else 0
+        try:
+            is_numeric = pd.api.types.is_numeric_dtype(df[col])
+        except Exception:
+            is_numeric = False
+        zeros = int((df[col] == 0).sum()) if is_numeric else 0
 
         quality_data.append({
             "Column": col,
