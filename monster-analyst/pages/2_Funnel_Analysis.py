@@ -33,7 +33,7 @@ if active_df.empty:
     st.info("No data loaded. Go to the main page to import data.")
     st.stop()
 
-df = st.session_state.get("computed_metrics_df", active_df)
+df = st.session_state.get("computed_metrics_df") or active_df
 
 # Define funnel stages with common column name variations
 FUNNEL_STAGES = [

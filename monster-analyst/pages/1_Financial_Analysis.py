@@ -34,7 +34,7 @@ if active_df.empty:
     st.stop()
 
 # Check if we have computed metrics
-df = st.session_state.get("computed_metrics_df", active_df)
+df = st.session_state.get("computed_metrics_df") or active_df
 
 st.markdown('<div class="section-title" style="background:#D13438;">Financial Configuration</div>', unsafe_allow_html=True)
 
