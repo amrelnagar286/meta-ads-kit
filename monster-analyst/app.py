@@ -89,10 +89,13 @@ with st.sidebar:
             ),
             key="sidebar_dataset",
         )
+        prev_active = st.session_state.active_dataset
         if active == "[Merged Dataset]":
             st.session_state.active_dataset = None
         else:
             st.session_state.active_dataset = active
+        if st.session_state.active_dataset != prev_active:
+            st.session_state.computed_metrics_df = None
 
         active_df = get_active_df()
         if not active_df.empty:
@@ -247,6 +250,7 @@ with tab_import:
                     del st.session_state.datasets[name]
                     if st.session_state.active_dataset == name:
                         st.session_state.active_dataset = None
+                    st.session_state.computed_metrics_df = None
                     st.rerun()
 
 

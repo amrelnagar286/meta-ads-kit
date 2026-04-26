@@ -206,12 +206,14 @@ def import_meta_dashboard_output(folder_path: str) -> Dict[str, pd.DataFrame]:
         for file_info in manifest.get("files", []):
             name = file_info.get("name", "")
             csv_path = file_info.get("csv")
-            if csv_path and Path(csv_path).exists():
-                datasets[name] = pd.read_csv(csv_path, encoding="utf-8-sig")
+            resolved_csv = (folder / csv_path) if csv_path else None
+            if resolved_csv and resolved_csv.exists():
+                datasets[name] = pd.read_csv(resolved_csv, encoding="utf-8-sig")
             else:
                 json_path = file_info.get("json")
-                if json_path and Path(json_path).exists():
-                    with open(json_path, "r", encoding="utf-8") as f:
+                resolved_json = (folder / json_path) if json_path else None
+                if resolved_json and resolved_json.exists():
+                    with open(resolved_json, "r", encoding="utf-8") as f:
                         datasets[name] = pd.DataFrame(json.load(f))
 
     # Fallback: try MASTER files
@@ -330,12 +332,22 @@ def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize column names to canonical form."""
     result = df.copy()
     rename_map = {}
+    used_targets = set()
     for col in result.columns:
         normalized = col.lower().strip().replace(" ", "_")
         if normalized in COLUMN_ALIASES:
-            rename_map[col] = COLUMN_ALIASES[normalized]
+            target = COLUMN_ALIASES[normalized]
+            if target in used_targets:
+                log.warning("Skipping alias %s -> %s (duplicate target)", col, target)
+                continue
+            rename_map[col] = target
+            used_targets.add(target)
         elif col != normalized:
+            if normalized in used_targets:
+                log.warning("Skipping rename %s -> %s (duplicate target)", col, normalized)
+                continue
             rename_map[col] = normalized
+            used_targets.add(normalized)
     if rename_map:
         result = result.rename(columns=rename_map)
     return result
