@@ -50,6 +50,17 @@ if "computed_metrics_df" not in st.session_state:
     st.session_state.computed_metrics_df = None
 
 
+def _apply_entity_filters(df: pd.DataFrame) -> pd.DataFrame:
+    """Apply sidebar entity filters to any DataFrame."""
+    for key in ["entity_filter_campaign", "entity_filter_ad_set", "entity_filter_ad"]:
+        filt = st.session_state.get(key)
+        if filt:
+            col, vals = filt
+            if col in df.columns:
+                df = df[df[col].astype(str).isin(vals)]
+    return df
+
+
 def get_active_df() -> pd.DataFrame:
     """Get the currently active dataset, with entity filters applied."""
     name = st.session_state.active_dataset
@@ -59,14 +70,7 @@ def get_active_df() -> pd.DataFrame:
         df = st.session_state.merged_data
     else:
         return pd.DataFrame()
-    # Apply entity filters set in sidebar
-    for key in ["entity_filter_campaign", "entity_filter_ad_set", "entity_filter_ad"]:
-        filt = st.session_state.get(key)
-        if filt:
-            col, vals = filt
-            if col in df.columns:
-                df = df[df[col].astype(str).isin(vals)]
-    return df
+    return _apply_entity_filters(df)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -613,7 +617,7 @@ with tab_explore:
         st.info("No data loaded. Import data first.")
     else:
         # Use computed metrics if available
-        df_display = st.session_state.computed_metrics_df if st.session_state.computed_metrics_df is not None else active_df
+        df_display = _apply_entity_filters(st.session_state.computed_metrics_df) if st.session_state.computed_metrics_df is not None else active_df
 
         explore_tabs = st.tabs(["Table View", "Pivot Table", "Charts", "Statistics", "Period Comparison"])
 
@@ -790,7 +794,7 @@ with tab_metrics:
                     "Unit": m.get("unit", ""),
                     "Description": m.get("description", ""),
                 })
-            downloadable_dataframe(pd.DataFrame(metric_data), key="metric_catalog", label="metric_catalog", use_container_width=True, hide_index=True)
+            downloadable_dataframe(pd.DataFrame(metric_data), key=f"metric_catalog_{cat_id}", label=f"metric_catalog_{cat_id}", use_container_width=True, hide_index=True)
 
     # ------ Custom Formula ------
     with metric_tabs[1]:
@@ -956,7 +960,7 @@ with tab_export:
     st.markdown('<div class="section-title">Export Analysis Results</div>', unsafe_allow_html=True)
 
     active_df = get_active_df()
-    df_export = st.session_state.computed_metrics_df if st.session_state.computed_metrics_df is not None else active_df
+    df_export = _apply_entity_filters(st.session_state.computed_metrics_df) if st.session_state.computed_metrics_df is not None else active_df
 
     if df_export.empty:
         st.info("No data to export. Import and analyze data first.")

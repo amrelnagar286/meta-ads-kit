@@ -42,6 +42,13 @@ if active_df.empty:
     st.stop()
 
 _computed = st.session_state.get("computed_metrics_df")
+if _computed is not None:
+    for _fk in ["entity_filter_campaign", "entity_filter_ad_set", "entity_filter_ad"]:
+        _fv = st.session_state.get(_fk)
+        if _fv:
+            _fc, _vs = _fv
+            if _fc in _computed.columns:
+                _computed = _computed[_computed[_fc].astype(str).isin(_vs)]
 df = _computed if _computed is not None else active_df
 
 # Define funnel stages with common column name variations
