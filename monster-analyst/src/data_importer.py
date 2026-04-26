@@ -131,13 +131,16 @@ def import_json(file_or_path) -> pd.DataFrame:
         return pd.DataFrame(data)
 
     if isinstance(data, dict):
-        # Meta dashboard MASTER_ALL_DATA.json format
+        # Meta dashboard MASTER_ALL_DATA.json format: {meta, manifest, datasets}
         if "datasets" in data and isinstance(data["datasets"], dict):
             frames = {}
             for key, records in data["datasets"].items():
-                if isinstance(records, list):
+                if isinstance(records, list) and records:
                     frames[key] = pd.DataFrame(records)
             return frames if frames else pd.DataFrame()
+        # Flat manifest-like JSON with "files" array (from manifest.json)
+        if "files" in data and isinstance(data["files"], list):
+            return pd.DataFrame(data["files"])
         # Single object with arrays
         if all(isinstance(v, list) for v in data.values()):
             return pd.DataFrame(data)
@@ -206,12 +209,23 @@ def import_meta_dashboard_output(folder_path: str) -> Dict[str, pd.DataFrame]:
         for file_info in manifest.get("files", []):
             name = file_info.get("name", "")
             csv_path = file_info.get("csv")
-            resolved_csv = (folder / csv_path) if csv_path else None
+            if csv_path:
+                # Handle both absolute and relative paths
+                abs_csv = Path(csv_path)
+                rel_csv = folder / csv_path
+                resolved_csv = abs_csv if abs_csv.is_absolute() and abs_csv.exists() else rel_csv
+            else:
+                resolved_csv = None
             if resolved_csv and resolved_csv.exists():
                 datasets[name] = pd.read_csv(resolved_csv, encoding="utf-8-sig")
             else:
                 json_path = file_info.get("json")
-                resolved_json = (folder / json_path) if json_path else None
+                if json_path:
+                    abs_json = Path(json_path)
+                    rel_json = folder / json_path
+                    resolved_json = abs_json if abs_json.is_absolute() and abs_json.exists() else rel_json
+                else:
+                    resolved_json = None
                 if resolved_json and resolved_json.exists():
                     with open(resolved_json, "r", encoding="utf-8") as f:
                         datasets[name] = pd.DataFrame(json.load(f))
