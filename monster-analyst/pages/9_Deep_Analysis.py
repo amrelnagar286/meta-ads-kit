@@ -381,7 +381,7 @@ if is_chat:
     else:
         add_metric(40, "Cost of Indecision", 0, "$", "Needs Leads + Purchases", info_only, "Chat — Sales ROI", "Leads + Purchases")
 
-    add_metric(41, "Simp Algorithm Index", simp_idx, "ratio", "<0.05 Cheap-click bias | 0.05-0.15 Normal | >0.15 Good", healthy_above(0.05, 0.15), "Chat — Algorithm Saturation")
+    add_metric(41, "Simp Algorithm Index", simp_idx, "ratio", "<0.05 Cheap-click bias | 0.05-0.15 Normal | >0.15 Good", healthy_above(0.15, 0.05), "Chat — Algorithm Saturation")
     add_metric(42, "Message Frequency Exhaustion", msg_freq_exhaust, "$", "Rising + declining conversations = saturated", info_only, "Chat — Algorithm Saturation")
 
     garbage = 0
