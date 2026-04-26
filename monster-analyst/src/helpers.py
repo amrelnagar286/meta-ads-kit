@@ -91,10 +91,10 @@ def downloadable_dataframe(data, key: str, label: str = "table", **kwargs):
     st.dataframe(data, **kwargs)
 
     # Extract the raw DataFrame from Styler if needed
-    if isinstance(data, pd.io.formats.style.Styler):
-        raw_df = data.data
-    elif isinstance(data, pd.DataFrame):
+    if isinstance(data, pd.DataFrame):
         raw_df = data
+    elif hasattr(data, "data") and isinstance(data.data, pd.DataFrame):
+        raw_df = data.data
     else:
         return  # can't export non-DataFrame objects
 
