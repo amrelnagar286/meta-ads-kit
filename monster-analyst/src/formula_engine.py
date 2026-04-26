@@ -196,6 +196,8 @@ def _check_node_safety(node: ast.AST) -> None:
             raise ValueError("Only simple function calls allowed")
         if node.func.id not in SAFE_FUNCS:
             raise ValueError(f"Unknown function: {node.func.id}. Allowed: {', '.join(SAFE_FUNCS)}")
+        if node.keywords:
+            raise ValueError("Keyword arguments are not supported in formulas")
         for a in node.args:
             _check_node_safety(a)
     else:

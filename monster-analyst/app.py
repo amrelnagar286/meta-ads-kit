@@ -457,7 +457,13 @@ with tab_kpi:
                                 agg_ctx[col_lower] = 0.0
                         except (ValueError, TypeError):
                             pass
-                        continue
+                    else:
+                        # Constituents unavailable — use mean (not sum) for rate columns
+                        try:
+                            agg_ctx[col_lower] = float(active_df[col].mean())
+                        except (ValueError, TypeError):
+                            pass
+                    continue
                 try:
                     agg_ctx[col_lower] = float(active_df[col].sum())
                 except (ValueError, TypeError):
