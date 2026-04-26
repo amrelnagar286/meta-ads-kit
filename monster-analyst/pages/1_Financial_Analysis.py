@@ -68,7 +68,8 @@ with col4:
 numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
 has_spend = "spend" in [c.lower() for c in df.columns]
 has_revenue = any(c.lower() in ("purchase_conversion_value", "revenue", "conversion_value") for c in df.columns)
-has_purchases = "purchases" in [c.lower() for c in df.columns]
+purchases_col = next((c for c in df.columns if c.lower() == "purchases"), None)
+has_purchases = purchases_col is not None
 
 if has_spend and has_revenue:
     # Find actual column names
@@ -77,7 +78,7 @@ if has_spend and has_revenue:
 
     total_spend = df[spend_col].sum()
     total_revenue = df[rev_col].sum()
-    total_purchases = df["purchases"].sum() if has_purchases else 0
+    total_purchases = df[purchases_col].sum() if has_purchases else 0
 
     # KPI Cards
     st.markdown('<div class="section-title" style="background:#D13438;">Financial KPIs (Account Level)</div>', unsafe_allow_html=True)
@@ -120,9 +121,12 @@ if has_spend and has_revenue:
     if group_cols:
         st.markdown("---")
         group_by = st.selectbox("Analyze by", group_cols, key="fin_group")
-        grouped = df.groupby(group_by, as_index=False).agg({spend_col: "sum", rev_col: "sum"})
+        agg_dict = {spend_col: "sum", rev_col: "sum"}
         if has_purchases:
-            grouped["purchases"] = df.groupby(group_by)["purchases"].sum().values
+            agg_dict[purchases_col] = "sum"
+        grouped = df.groupby(group_by, as_index=False).agg(agg_dict)
+        if has_purchases:
+            grouped = grouped.rename(columns={purchases_col: "purchases"})
 
         grouped["ROAS"] = grouped[rev_col] / grouped[spend_col].replace(0, float("nan"))
         grouped["POAS"] = (grouped[rev_col] - (grouped.get("purchases", 0) * cogs_value) - grouped[spend_col]) / grouped[spend_col].replace(0, float("nan"))
