@@ -51,13 +51,22 @@ if "computed_metrics_df" not in st.session_state:
 
 
 def get_active_df() -> pd.DataFrame:
-    """Get the currently active dataset."""
+    """Get the currently active dataset, with entity filters applied."""
     name = st.session_state.active_dataset
     if name and name in st.session_state.datasets:
-        return st.session_state.datasets[name]
-    if st.session_state.merged_data is not None:
-        return st.session_state.merged_data
-    return pd.DataFrame()
+        df = st.session_state.datasets[name]
+    elif st.session_state.merged_data is not None:
+        df = st.session_state.merged_data
+    else:
+        return pd.DataFrame()
+    # Apply entity filters set in sidebar
+    for key in ["entity_filter_campaign", "entity_filter_ad_set", "entity_filter_ad"]:
+        filt = st.session_state.get(key)
+        if filt:
+            col, vals = filt
+            if col in df.columns:
+                df = df[df[col].astype(str).isin(vals)]
+    return df
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -108,6 +117,32 @@ with st.sidebar:
                 f'</div>',
                 unsafe_allow_html=True,
             )
+
+            # Entity filter (campaign / ad set / ad)
+            st.markdown("**Filter by Entity**")
+            entity_cols = {
+                "Campaign": ["campaign_name", "campaign_id"],
+                "Ad Set": ["adset_name", "adset_id"],
+                "Ad": ["ad_name", "ad_id"],
+            }
+            for label, col_candidates in entity_cols.items():
+                matching_col = None
+                for c in col_candidates:
+                    if c in active_df.columns:
+                        matching_col = c
+                        break
+                if matching_col:
+                    unique_vals = sorted(active_df[matching_col].dropna().unique().astype(str).tolist())
+                    if unique_vals:
+                        selected = st.multiselect(
+                            f"{label}",
+                            unique_vals,
+                            key=f"filter_{label.lower().replace(' ', '_')}",
+                        )
+                        if selected:
+                            st.session_state[f"entity_filter_{label.lower().replace(' ', '_')}"] = (matching_col, selected)
+                        else:
+                            st.session_state.pop(f"entity_filter_{label.lower().replace(' ', '_')}", None)
     else:
         st.info("No datasets loaded yet. Upload data to begin.")
 

@@ -22,10 +22,18 @@ st.markdown(
 def get_active_df():
     name = st.session_state.get("active_dataset")
     if name and name in st.session_state.get("datasets", {}):
-        return st.session_state.datasets[name]
-    if st.session_state.get("merged_data") is not None:
-        return st.session_state.merged_data
-    return pd.DataFrame()
+        df = st.session_state.datasets[name]
+    elif st.session_state.get("merged_data") is not None:
+        df = st.session_state.merged_data
+    else:
+        return pd.DataFrame()
+    for key in ["entity_filter_campaign", "entity_filter_ad_set", "entity_filter_ad"]:
+        filt = st.session_state.get(key)
+        if filt:
+            col, vals = filt
+            if col in df.columns:
+                df = df[df[col].astype(str).isin(vals)]
+    return df
 
 
 active_df = get_active_df()
