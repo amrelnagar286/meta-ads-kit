@@ -406,6 +406,7 @@ with dash_tabs[5]:
             else:
                 try:
                     result = apply_formula_to_df(df, calc_formula, calc_name)
+                    df = df.copy()
                     df[calc_name] = result
                     st.session_state.computed_metrics_df = df
                     st.success(f"Added column '{calc_name}'")

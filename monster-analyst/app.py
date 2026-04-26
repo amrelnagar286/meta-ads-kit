@@ -183,7 +183,10 @@ with tab_import:
                         st.session_state.dataset_sources[uploaded_file.name] = src_type
                         if not st.session_state.active_dataset:
                             st.session_state.active_dataset = uploaded_file.name
-                    st.success(f"Imported: {uploaded_file.name}")
+                    if uploaded_file.name in st.session_state.datasets or any(k.startswith(f"{uploaded_file.name} :: ") for k in st.session_state.datasets):
+                        st.success(f"Imported: {uploaded_file.name}")
+                    else:
+                        st.warning(f"No data found in: {uploaded_file.name}")
                 except Exception as e:
                     st.error(f"Failed to import {uploaded_file.name}: {e}")
 
@@ -385,10 +388,39 @@ with tab_kpi:
                 cat_metrics[cat].append(m)
 
             # Compute aggregated values
+            # Non-additive (rate/ratio) columns are recomputed from their additive constituents
+            RATE_COLUMNS = {
+                "cpc": ("spend", "clicks"),
+                "cpm": ("spend", "impressions"),
+                "ctr": ("clicks", "impressions"),
+                "frequency": ("impressions", "reach"),
+                "outbound_ctr": ("outbound_clicks", "impressions"),
+                "cost_per_action_type": ("spend", "actions"),
+            }
             agg_ctx = {}
             for col in active_df.columns:
+                col_lower = col.lower()
+                if col_lower in RATE_COLUMNS:
+                    num_col, den_col = RATE_COLUMNS[col_lower]
+                    if num_col in [c.lower() for c in active_df.columns] and den_col in [c.lower() for c in active_df.columns]:
+                        num_actual = [c for c in active_df.columns if c.lower() == num_col][0]
+                        den_actual = [c for c in active_df.columns if c.lower() == den_col][0]
+                        try:
+                            den_sum = float(active_df[den_actual].sum())
+                            if den_sum != 0:
+                                if col_lower == "cpm":
+                                    agg_ctx[col_lower] = float(active_df[num_actual].sum()) / den_sum * 1000
+                                elif col_lower == "ctr" or col_lower == "outbound_ctr":
+                                    agg_ctx[col_lower] = float(active_df[num_actual].sum()) / den_sum * 100
+                                else:
+                                    agg_ctx[col_lower] = float(active_df[num_actual].sum()) / den_sum
+                            else:
+                                agg_ctx[col_lower] = 0.0
+                        except (ValueError, TypeError):
+                            pass
+                    continue
                 try:
-                    agg_ctx[col.lower()] = float(active_df[col].sum())
+                    agg_ctx[col_lower] = float(active_df[col].sum())
                 except (ValueError, TypeError):
                     pass
 
