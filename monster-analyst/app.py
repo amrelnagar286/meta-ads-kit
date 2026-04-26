@@ -2,8 +2,10 @@
 Monster Data Analyst -- Ultimate MarTech Expert Analysis Platform
 Main application entry point.
 """
+import io
 import os
 import json
+import re
 import logging
 import streamlit as st
 import pandas as pd
@@ -412,12 +414,25 @@ with tab_kpi:
                             badge = ""
                             thresholds = metric.get("thresholds")
                             if thresholds:
-                                if value >= thresholds.get("healthy", float("inf")):
-                                    badge = '<span class="badge-healthy">Healthy</span>'
-                                elif value >= thresholds.get("warning", float("inf")):
-                                    badge = '<span class="badge-warning">Warning</span>'
-                                elif value <= thresholds.get("critical", float("-inf")):
-                                    badge = '<span class="badge-critical">Critical</span>'
+                                healthy_t = thresholds.get("healthy", None)
+                                warning_t = thresholds.get("warning", None)
+                                critical_t = thresholds.get("critical", None)
+                                if healthy_t is not None and critical_t is not None and healthy_t < critical_t:
+                                    # Lower is better (e.g. fatigue, drop-off)
+                                    if value <= healthy_t:
+                                        badge = '<span class="badge-healthy">Healthy</span>'
+                                    elif warning_t is not None and value <= warning_t:
+                                        badge = '<span class="badge-warning">Warning</span>'
+                                    elif value >= critical_t:
+                                        badge = '<span class="badge-critical">Critical</span>'
+                                else:
+                                    # Higher is better (e.g. ROAS, hook rate)
+                                    if healthy_t is not None and value >= healthy_t:
+                                        badge = '<span class="badge-healthy">Healthy</span>'
+                                    elif warning_t is not None and value >= warning_t:
+                                        badge = '<span class="badge-warning">Warning</span>'
+                                    elif critical_t is not None and value <= critical_t:
+                                        badge = '<span class="badge-critical">Critical</span>'
 
                             st.markdown(
                                 f'<div class="metric-card">'
@@ -609,7 +624,7 @@ with tab_metrics:
             "Categories",
             [(cid, f"{ci['name']} / {ci['name_ar']}") for cid, ci in CATEGORIES.items()],
             format_func=lambda x: x[1],
-            default=list(CATEGORIES.items())[:3],
+            default=[(cid, f"{ci['name']} / {ci['name_ar']}") for cid, ci in list(CATEGORIES.items())[:3]],
             key="metric_cats",
         )
         selected_cat_ids = [c[0] for c in selected_cats] if selected_cats else list(CATEGORIES.keys())
@@ -727,8 +742,8 @@ with tab_metrics:
                     formula = m["formula"]
                     # Convert Python-style to DAX-style
                     dax_formula = formula
-                    for col in m.get("required_columns", []):
-                        dax_formula = dax_formula.replace(col, f"SUM('{col}')")
+                    for col in sorted(m.get("required_columns", []), key=len, reverse=True):
+                        dax_formula = re.sub(r'\b' + re.escape(col) + r'\b', f"SUM('{col}')", dax_formula)
                     dax_measures.append(f'{m["name"]} = {dax_formula}')
 
                 dax_text = "\n\n".join(dax_measures)
@@ -775,7 +790,6 @@ with tab_export:
                 )
 
             with col_excel:
-                import io
                 buffer = io.BytesIO()
                 with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
                     export_data.to_excel(writer, index=False, sheet_name="Analysis")
