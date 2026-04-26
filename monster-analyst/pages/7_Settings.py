@@ -5,7 +5,7 @@ import json
 import streamlit as st
 import pandas as pd
 
-from src.helpers import WINDOWS_11_CSS
+from src.helpers import WINDOWS_11_CSS, downloadable_dataframe
 from src.metric_catalog import CATEGORIES, METRICS, METRICS_BY_CATEGORY
 
 st.set_page_config(page_title="Settings", page_icon="⚙️", layout="wide")
@@ -117,7 +117,7 @@ with settings_tabs[2]:
 
     from src.data_importer import COLUMN_ALIASES
     alias_data = [{"Input Name": k, "Normalized To": v} for k, v in sorted(COLUMN_ALIASES.items())]
-    st.dataframe(pd.DataFrame(alias_data), use_container_width=True, hide_index=True, height=400)
+    downloadable_dataframe(pd.DataFrame(alias_data), key="settings_aliases", label="column_aliases", use_container_width=True, hide_index=True, height=400)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ABOUT

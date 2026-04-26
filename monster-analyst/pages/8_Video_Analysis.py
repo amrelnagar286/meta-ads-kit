@@ -7,7 +7,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, render_quick_add_metric, downloadable_dataframe
 
 st.set_page_config(page_title="Video Analysis", page_icon="🎬", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -251,7 +251,7 @@ with video_tabs[0]:
                 "Retention": f"{retain_pct:.1f}%",
                 "Drop-off": f"{drop_pct:.1f}%",
             })
-        st.dataframe(pd.DataFrame(drop_data), use_container_width=True, hide_index=True)
+        downloadable_dataframe(pd.DataFrame(drop_data), key="video_dropoff", label="video_dropoff", use_container_width=True, hide_index=True)
     else:
         st.info("Need at least Impressions + 3-Second Video Views to build the funnel. Check if your data includes video columns.")
 
@@ -316,7 +316,7 @@ with video_tabs[1]:
     detail_rows.append({"Metric": "Cost Per ThruPlay", "Value": f"${cost_per_thruplay:.4f}"})
     if total_spend > 0:
         detail_rows.append({"Metric": "Total Video Spend", "Value": f"${total_spend:,.2f}"})
-    st.dataframe(pd.DataFrame(detail_rows), use_container_width=True, hide_index=True)
+    downloadable_dataframe(pd.DataFrame(detail_rows), key="video_performance", label="video_performance", use_container_width=True, hide_index=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 3: CREATIVE FATIGUE ANALYSIS
@@ -399,7 +399,7 @@ with video_tabs[2]:
                     "Spend": round(sp, 2),
                 })
             fatigue_df = pd.DataFrame(rows).sort_values("Fatigue Index", ascending=False)
-            st.dataframe(fatigue_df, use_container_width=True, hide_index=True)
+            downloadable_dataframe(fatigue_df, key="video_fatigue", label="video_fatigue", use_container_width=True, hide_index=True)
 
             # Chart
             if len(fatigue_df) > 1:
@@ -511,7 +511,7 @@ with video_tabs[4]:
                     "Spend": round(sp, 2),
                 })
             result_df = pd.DataFrame(rows).sort_values("Hook Rate %", ascending=False)
-            st.dataframe(result_df, use_container_width=True, hide_index=True)
+            downloadable_dataframe(result_df, key="video_breakdown", label="video_breakdown", use_container_width=True, hide_index=True)
 
             # Comparative chart
             metric_choice = st.selectbox("Chart Metric", ["Hook Rate %", "Hold Rate %", "Cost/ThruPlay", "Spend"])

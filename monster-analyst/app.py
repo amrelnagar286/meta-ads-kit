@@ -10,7 +10,7 @@ import logging
 import streamlit as st
 import pandas as pd
 
-from src.helpers import WINDOWS_11_CSS, load_custom_metrics, save_custom_metrics, strip_timezone_for_excel
+from src.helpers import WINDOWS_11_CSS, load_custom_metrics, save_custom_metrics, strip_timezone_for_excel, downloadable_dataframe
 from src.data_importer import (
     import_csv, import_excel, import_json, import_google_sheet,
     normalize_columns, detect_column_types, coerce_column_types,
@@ -282,8 +282,8 @@ with tab_import:
                     {"Column": col, "Type": types.get(col, "unknown"), "Sample": str(df[col].iloc[0]) if len(df) > 0 else ""}
                     for col in df.columns
                 ])
-                st.dataframe(col_info, use_container_width=True, hide_index=True)
-                st.dataframe(df.head(5), use_container_width=True, hide_index=True)
+                downloadable_dataframe(col_info, key=f"colinfo_{name}", label=f"columns_{name}", use_container_width=True, hide_index=True)
+                downloadable_dataframe(df.head(5), key=f"preview_{name}", label=f"preview_{name}", use_container_width=True, hide_index=True)
 
                 if st.button(f"Remove {name}", key=f"rm_{name}"):
                     del st.session_state.datasets[name]
@@ -370,7 +370,7 @@ with tab_link:
                     """)
                     if preview["sample_matched"]:
                         st.markdown(f"Sample matched keys: `{'`, `'.join(preview['sample_matched'][:5])}`")
-                    st.dataframe(preview["preview_df"].head(5), use_container_width=True, hide_index=True)
+                    downloadable_dataframe(preview["preview_df"].head(5), key="join_preview", label="join_preview", use_container_width=True, hide_index=True)
 
             with col_merge:
                 if st.button("Execute Merge", type="primary", key="btn_merge"):
@@ -387,7 +387,7 @@ with tab_link:
             st.markdown("#### Merged Dataset Preview")
             merged = st.session_state.merged_data
             st.markdown(f"**{len(merged):,} rows** x **{len(merged.columns)} columns**")
-            st.dataframe(merged.head(20), use_container_width=True, hide_index=True)
+            downloadable_dataframe(merged.head(20), key="merged_preview", label="merged_data", use_container_width=True, hide_index=True)
 
             merged_name = st.text_input("Save merged as dataset:", value="merged_data", key="merged_name")
             if st.button("Save Merged as New Dataset", key="btn_save_merged"):
@@ -598,7 +598,7 @@ with tab_kpi:
                 st.session_state.computed_metrics_df = result_df
                 new_cols = [c for c in result_df.columns if c not in active_df.columns]
                 st.success(f"Computed {len(new_cols)} metrics across {len(result_df):,} rows")
-                st.dataframe(result_df[list(active_df.columns[:3]) + new_cols].head(20), use_container_width=True, hide_index=True)
+                downloadable_dataframe(result_df[list(active_df.columns[:3]) + new_cols].head(20), key="row_metrics", label="row_metrics", use_container_width=True, hide_index=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -628,7 +628,7 @@ with tab_explore:
                 if text_filter:
                     mask = filtered.astype(str).apply(lambda x: x.str.contains(text_filter, case=False, na=False)).any(axis=1)
                     filtered = filtered[mask]
-                st.dataframe(filtered, use_container_width=True, hide_index=True, height=500)
+                downloadable_dataframe(filtered, key="data_explorer", label="data_explorer", use_container_width=True, hide_index=True, height=500)
                 st.markdown(f"Showing {len(filtered):,} of {len(df_display):,} rows")
 
         # ------ Pivot Table ------
@@ -648,7 +648,7 @@ with tab_explore:
             if pivot_rows and pivot_values:
                 try:
                     pivot = df_display.groupby(pivot_rows, as_index=False)[pivot_values].agg(pivot_agg)
-                    st.dataframe(pivot, use_container_width=True, hide_index=True)
+                    downloadable_dataframe(pivot, key="pivot_table", label="pivot_table", use_container_width=True, hide_index=True)
                 except Exception as e:
                     st.error(f"Pivot error: {e}")
 
@@ -709,7 +709,7 @@ with tab_explore:
             if numeric_cols:
                 stats = df_display[numeric_cols].describe().T
                 stats["cv%"] = (stats["std"] / stats["mean"] * 100).round(2)
-                st.dataframe(stats, use_container_width=True)
+                downloadable_dataframe(stats, key="statistics", label="statistics", use_container_width=True)
 
                 # Correlation matrix
                 st.markdown("#### Correlation Matrix")
@@ -718,9 +718,9 @@ with tab_explore:
                     if len(sel_corr_cols) >= 2:
                         corr = df_display[sel_corr_cols].corr()
                         try:
-                            st.dataframe(corr.style.background_gradient(cmap="RdBu", vmin=-1, vmax=1), use_container_width=True)
+                            downloadable_dataframe(corr.style.background_gradient(cmap="RdBu", vmin=-1, vmax=1), key="correlation", label="correlation_matrix", use_container_width=True)
                         except ImportError:
-                            st.dataframe(corr, use_container_width=True)
+                            downloadable_dataframe(corr, key="correlation_plain", label="correlation_matrix", use_container_width=True)
             else:
                 st.info("No numeric columns found for statistical analysis.")
 
@@ -790,7 +790,7 @@ with tab_metrics:
                     "Unit": m.get("unit", ""),
                     "Description": m.get("description", ""),
                 })
-            st.dataframe(pd.DataFrame(metric_data), use_container_width=True, hide_index=True)
+            downloadable_dataframe(pd.DataFrame(metric_data), key="metric_catalog", label="metric_catalog", use_container_width=True, hide_index=True)
 
     # ------ Custom Formula ------
     with metric_tabs[1]:
@@ -826,7 +826,7 @@ with tab_metrics:
                         result = apply_formula_to_df(active_df, custom_formula, custom_name)
                         preview = active_df.copy()
                         preview[custom_name] = result
-                        st.dataframe(preview[[active_df.columns[0], custom_name]].head(10), use_container_width=True, hide_index=True)
+                        downloadable_dataframe(preview[[active_df.columns[0], custom_name]].head(10), key="metric_preview", label="metric_preview", use_container_width=True, hide_index=True)
                         st.success(f"Applied '{custom_name}' to {len(active_df):,} rows")
                     except Exception as e:
                         st.error(f"Error: {e}")
@@ -869,7 +869,7 @@ with tab_metrics:
                     "Unit": m.get("unit", "number"),
                     "Description": m.get("description", ""),
                 })
-            st.dataframe(pd.DataFrame(cm_data), use_container_width=True, hide_index=True)
+            downloadable_dataframe(pd.DataFrame(cm_data), key="custom_metrics", label="custom_metrics", use_container_width=True, hide_index=True)
 
             # Delete custom metric
             del_metric = st.selectbox(
@@ -912,7 +912,7 @@ with tab_metrics:
                     new_cols = [c for c in result.columns if c not in active_df.columns]
                     st.session_state.computed_metrics_df = result
                     st.success(f"Computed {len(new_cols)} metrics across {len(result):,} rows!")
-                    st.dataframe(result[new_cols].head(20), use_container_width=True, hide_index=True)
+                    downloadable_dataframe(result[new_cols].head(20), key="bulk_metrics", label="bulk_metrics", use_container_width=True, hide_index=True)
         else:
             st.info("Import data first.")
 

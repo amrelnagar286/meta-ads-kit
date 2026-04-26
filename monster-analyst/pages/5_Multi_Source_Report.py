@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, render_quick_add_metric, strip_timezone_for_excel
+from src.helpers import WINDOWS_11_CSS, render_quick_add_metric, strip_timezone_for_excel, downloadable_dataframe
 from src.formula_engine import evaluate_formula, bulk_apply_metrics
 from src.metric_catalog import METRICS, get_metrics_for_available_columns
 
@@ -67,7 +67,7 @@ with report_tabs[0]:
 
         summary = df[selected_metrics].agg(agg_list).T
         summary.columns = agg_funcs
-        st.dataframe(summary.style.format("{:,.2f}"), use_container_width=True)
+        downloadable_dataframe(summary.style.format("{:,.2f}"), key="report_summary", label="report_summary", use_container_width=True)
 
         # Bar chart of sums
         if "Sum" in agg_funcs:
@@ -93,7 +93,7 @@ with report_tabs[1]:
         if value_cols:
             breakdown = df.groupby(breakdown_col, as_index=False)[value_cols].agg(agg_func)
             breakdown = breakdown.sort_values(value_cols[0], ascending=False)
-            st.dataframe(breakdown, use_container_width=True, hide_index=True)
+            downloadable_dataframe(breakdown, key="report_breakdown", label="report_breakdown", use_container_width=True, hide_index=True)
 
             # Top N chart
             top_n = st.slider("Top N", 5, min(50, len(breakdown)), 10, key="bd_topn")
@@ -123,7 +123,7 @@ with report_tabs[2]:
                 filtered = df[df[compare_dim].isin(selected_entities)]
                 comparison = filtered.groupby(compare_dim, as_index=False)[compare_metrics].sum()
 
-                st.dataframe(comparison, use_container_width=True, hide_index=True)
+                downloadable_dataframe(comparison, key="report_comparison", label="report_comparison", use_container_width=True, hide_index=True)
 
                 # Grouped bar chart
                 fig = go.Figure()
@@ -167,7 +167,7 @@ with report_tabs[3]:
             fig.update_layout(template="plotly_white", font_family="Segoe UI", title="Metric Trends Over Time")
             st.plotly_chart(fig, use_container_width=True)
 
-            st.dataframe(trended, use_container_width=True, hide_index=True)
+            downloadable_dataframe(trended, key="report_trended", label="report_trended", use_container_width=True, hide_index=True)
     else:
         st.info("Need date and numeric columns for trend analysis.")
 

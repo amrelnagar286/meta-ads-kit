@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric, downloadable_dataframe
 from src.formula_engine import apply_formula_to_df, evaluate_formula
 
 st.set_page_config(page_title="Financial Analysis", page_icon="💰", layout="wide")
@@ -122,13 +122,13 @@ if has_spend and has_revenue:
         grouped["BE_Delta"] = grouped["ROAS"] - breakeven_roas
         grouped = grouped.sort_values("ROAS", ascending=False)
 
-        st.dataframe(grouped.style.format({
+        downloadable_dataframe(grouped.style.format({
             spend_col: "${:,.2f}",
             rev_col: "${:,.2f}",
             "ROAS": "{:.2f}",
             "POAS": "{:.2f}",
             "BE_Delta": "{:+.2f}",
-        }), use_container_width=True, hide_index=True)
+        }), key="financial_grouped", label="financial_analysis", use_container_width=True, hide_index=True)
 
         # Waterfall chart
         fig = px.bar(

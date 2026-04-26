@@ -8,7 +8,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, render_quick_add_metric, downloadable_dataframe
 
 st.set_page_config(page_title="Deep Analysis", page_icon="🔬", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -488,7 +488,7 @@ with deep_tabs[-2]:
                 "Impact": "HIGH" if m["num"] <= 25 else "MEDIUM",
             })
         miss_df = pd.DataFrame(miss_rows).sort_values("Impact")
-        st.dataframe(miss_df, use_container_width=True, hide_index=True)
+        downloadable_dataframe(miss_df, key="deep_missing", label="missing_data_registry", use_container_width=True, hide_index=True)
 
         # Most critical missing input
         if miss_rows:
@@ -522,7 +522,7 @@ with deep_tabs[-1]:
     for name, val in raw_vars:
         status = "CONFIRMED" if val > 0 else "N/A"
         reg_data.append({"Variable": name, "Value": f"{val:,.2f}" if val > 0 else "N/A", "Status": status})
-    st.dataframe(pd.DataFrame(reg_data), use_container_width=True, hide_index=True)
+    downloadable_dataframe(pd.DataFrame(reg_data), key="deep_raw_vars", label="raw_variable_registry", use_container_width=True, hide_index=True)
 
 st.markdown("---")
 render_quick_add_metric("deep_analysis")

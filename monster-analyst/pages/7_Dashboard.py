@@ -9,7 +9,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric, downloadable_dataframe
 from src.formula_engine import evaluate_formula, validate_formula, apply_formula_to_df
 
 st.set_page_config(page_title="Ultimate Dashboard", page_icon="📈", layout="wide")
@@ -177,7 +177,7 @@ with dash_tabs[1]:
                     margins=show_margins,
                     margins_name="TOTAL",
                 )
-                st.dataframe(pivot, use_container_width=True)
+                downloadable_dataframe(pivot, key="dash_pivot", label="pivot_table", use_container_width=True)
 
                 csv_data = pivot.to_csv().encode("utf-8-sig")
                 st.download_button("Download Pivot (CSV)", csv_data, file_name="pivot_table.csv", mime="text/csv")
@@ -207,7 +207,7 @@ with dash_tabs[2]:
             stats_df["zeros"] = (df[stat_cols] == 0).sum()
             stats_df["zeros_%"] = ((df[stat_cols] == 0).sum() / len(df) * 100).round(2)
 
-            st.dataframe(stats_df.style.format("{:.2f}"), use_container_width=True)
+            downloadable_dataframe(stats_df.style.format("{:.2f}"), key="dash_stats", label="statistics", use_container_width=True)
 
             # Distribution plots
             st.markdown("#### Distributions")
@@ -246,7 +246,7 @@ with dash_tabs[2]:
                             "Strength": "Strong" if abs(corr.iloc[i, j]) > 0.7 else "Moderate" if abs(corr.iloc[i, j]) > 0.4 else "Weak",
                         })
                 pairs_df = pd.DataFrame(pairs).sort_values("Correlation", key=abs, ascending=False)
-                st.dataframe(pairs_df, use_container_width=True, hide_index=True)
+                downloadable_dataframe(pairs_df, key="dash_corr_pairs", label="correlation_pairs", use_container_width=True, hide_index=True)
     else:
         st.warning("No numeric columns found for statistical analysis.")
 
@@ -312,7 +312,7 @@ with dash_tabs[3]:
                 if trend_group == "(none)":
                     dod = grouped[trend_metrics].pct_change() * 100
                     dod.insert(0, "Date", grouped[date_col])
-                    st.dataframe(dod.tail(14).style.format("{:.2f}%", subset=trend_metrics), use_container_width=True, hide_index=True)
+                    downloadable_dataframe(dod.tail(14).style.format("{:.2f}%", subset=trend_metrics), key="dash_dod", label="day_over_day", use_container_width=True, hide_index=True)
             else:
                 st.warning("No suitable date column found. Select one manually or ensure your data has date columns.")
         except Exception as e:
@@ -339,7 +339,7 @@ with dash_tabs[4]:
             grouped = grouped.sort_values(sort_metric, ascending=False).head(top_n)
 
             # Comparison table
-            st.dataframe(grouped, use_container_width=True, hide_index=True)
+            downloadable_dataframe(grouped, key="dash_topn", label="top_entities", use_container_width=True, hide_index=True)
 
             # Radar / comparison chart
             st.markdown("#### Visual Comparison")
@@ -418,7 +418,7 @@ with dash_tabs[5]:
                     df[calc_name] = result
                     st.session_state.computed_metrics_df = df
                     st.success(f"Added column '{calc_name}'")
-                    st.dataframe(df[[all_cols[0], calc_name]].head(10), use_container_width=True, hide_index=True)
+                    downloadable_dataframe(df[[all_cols[0], calc_name]].head(10), key="dash_calc", label="calculated_field", use_container_width=True, hide_index=True)
                 except Exception as e:
                     st.error(f"Error: {e}")
 
@@ -468,7 +468,7 @@ with dash_tabs[6]:
         })
 
     quality_df = pd.DataFrame(quality_data)
-    st.dataframe(quality_df, use_container_width=True, hide_index=True)
+    downloadable_dataframe(quality_df, key="dash_quality", label="data_quality", use_container_width=True, hide_index=True)
 
     # Outlier detection
     st.markdown("#### Outlier Detection")
@@ -499,7 +499,7 @@ with dash_tabs[6]:
 
         if not outliers.empty:
             st.markdown(f"**{len(outliers)} outliers detected:**")
-            st.dataframe(outliers.head(20), use_container_width=True, hide_index=True)
+            downloadable_dataframe(outliers.head(20), key="dash_outliers", label="outliers", use_container_width=True, hide_index=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────

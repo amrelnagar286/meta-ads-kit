@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric, downloadable_dataframe
 
 st.set_page_config(page_title="Funnel Analysis", page_icon="🔻", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -133,7 +133,7 @@ for i in range(1, len(available_stages)):
 dropoff_df = pd.DataFrame(dropoff_data)
 
 # Highlight worst drop-offs
-st.dataframe(dropoff_df.drop(columns=["_drop_pct"]), use_container_width=True, hide_index=True)
+downloadable_dataframe(dropoff_df.drop(columns=["_drop_pct"]), key="funnel_dropoff", label="funnel_dropoff", use_container_width=True, hide_index=True)
 
 # Find biggest bottleneck
 worst = max(dropoff_data, key=lambda x: x["_drop_pct"])
@@ -181,7 +181,7 @@ if group_cols:
         rate_name = f"{available_stages[i - 1]['name']}_to_{available_stages[i]['name']}_%"
         grouped[rate_name] = (grouped[curr_col] / grouped[prev_col].replace(0, float("nan")) * 100).round(2)
 
-    st.dataframe(grouped, use_container_width=True, hide_index=True)
+    downloadable_dataframe(grouped, key="funnel_grouped", label="funnel_by_entity", use_container_width=True, hide_index=True)
 
 st.markdown("---")
 render_quick_add_metric("funnel")

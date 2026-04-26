@@ -8,7 +8,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric, downloadable_dataframe
 
 st.set_page_config(page_title="Algorithm Health", page_icon="🤖", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -196,7 +196,7 @@ if group_cols:
             reach_col = cols_lower["reach"]
             grouped["ghost_rate_%"] = ((grouped[imp_col] - grouped[reach_col]) / grouped[imp_col].replace(0, float("nan")) * 100).round(2)
         grouped = grouped.sort_values(list(agg_cols.keys())[0], ascending=False)
-        st.dataframe(grouped.head(30), use_container_width=True, hide_index=True)
+        downloadable_dataframe(grouped.head(30), key="algo_grouped", label="algorithm_health", use_container_width=True, hide_index=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # DIAGNOSTIC RECOMMENDATIONS

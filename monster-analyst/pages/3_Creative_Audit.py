@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric, downloadable_dataframe
 from src.formula_engine import evaluate_formula
 
 st.set_page_config(page_title="Creative Audit", page_icon="🎨", layout="wide")
@@ -154,7 +154,7 @@ if display_cols:
     sort_by = st.selectbox("Sort by", computed, key="creative_sort")
     ascending = st.checkbox("Ascending", value=False, key="creative_asc")
     sorted_df = result[display_cols].dropna(subset=[sort_by]).sort_values(sort_by, ascending=ascending)
-    st.dataframe(sorted_df.head(50), use_container_width=True, hide_index=True)
+    downloadable_dataframe(sorted_df.head(50), key="creative_audit", label="creative_audit", use_container_width=True, hide_index=True)
 
     # Scatter plot
     if len(computed) >= 2:

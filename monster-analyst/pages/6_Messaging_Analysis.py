@@ -6,7 +6,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric
+from src.helpers import WINDOWS_11_CSS, safe_divide, render_quick_add_metric, downloadable_dataframe
 
 st.set_page_config(page_title="Messaging Analysis", page_icon="💬", layout="wide")
 st.markdown(WINDOWS_11_CSS, unsafe_allow_html=True)
@@ -179,7 +179,7 @@ if group_cols:
         if orders_col and conversations_col:
             grouped["Msg_to_Order_%"] = (grouped[orders_col] / grouped[conversations_col].replace(0, float("nan")) * 100).round(1)
         grouped = grouped.sort_values(spend_col if spend_col else list(agg_dict.keys())[0], ascending=False)
-        st.dataframe(grouped, use_container_width=True, hide_index=True)
+        downloadable_dataframe(grouped, key="msg_grouped", label="messaging_analysis", use_container_width=True, hide_index=True)
 
         # Chart
         if conversations_col and spend_col:

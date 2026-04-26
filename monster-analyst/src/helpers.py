@@ -77,6 +77,55 @@ def render_quick_add_metric(page_key: str):
                 st.warning("Enter both a name and a formula.")
 
 
+def downloadable_dataframe(data, key: str, label: str = "table", **kwargs):
+    """Display a dataframe with CSV/Excel/JSON download buttons.
+
+    Wraps st.dataframe() and adds a row of download buttons below it.
+    *data* can be a DataFrame, a Styler, or anything st.dataframe accepts.
+    *key* must be unique across the page to avoid widget id collisions.
+    Extra **kwargs are forwarded to st.dataframe().
+    """
+    import io
+    import streamlit as st
+
+    st.dataframe(data, **kwargs)
+
+    # Extract the raw DataFrame from Styler if needed
+    if isinstance(data, pd.io.formats.style.Styler):
+        raw_df = data.data
+    elif isinstance(data, pd.DataFrame):
+        raw_df = data
+    else:
+        return  # can't export non-DataFrame objects
+
+    if raw_df.empty:
+        return
+
+    dl_cols = st.columns([1, 1, 1, 4])
+    csv_bytes = raw_df.to_csv(index=False).encode("utf-8")
+    with dl_cols[0]:
+        st.download_button(
+            "CSV", csv_bytes, file_name=f"{label}.csv",
+            mime="text/csv", key=f"dl_csv_{key}",
+        )
+    with dl_cols[1]:
+        buf = io.BytesIO()
+        export_df = strip_timezone_for_excel(raw_df)
+        export_df.to_excel(buf, index=False, engine="openpyxl")
+        buf.seek(0)
+        st.download_button(
+            "Excel", buf.getvalue(), file_name=f"{label}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key=f"dl_xlsx_{key}",
+        )
+    with dl_cols[2]:
+        json_str = raw_df.to_json(orient="records", indent=2, default_handler=str)
+        st.download_button(
+            "JSON", json_str.encode("utf-8"), file_name=f"{label}.json",
+            mime="application/json", key=f"dl_json_{key}",
+        )
+
+
 def safe_divide(a: Any, b: Any, default: float = 0.0) -> float:
     """Safe division returning default when denominator is zero."""
     try:
